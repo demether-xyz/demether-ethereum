@@ -3,11 +3,14 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 
+import "@foundry-upgrades/ProxyTester.sol";
 import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {DOFT} from "../src/DOFT.sol";
 
 contract TestSetup is Test, TestHelper {
     address internal admin;
+    ProxyTester internal proxy = new ProxyTester();
+    bytes internal data;
 
     uint32 l1Eid = 1;
     uint32 l2Eid = 2;

@@ -6,6 +6,7 @@ import {DepositsManager} from "../src/DepositsManager.sol";
 
 contract TestL2Setup is TestSetup {
     DOFT internal l2token;
+    DepositsManager internal depositsManager;
 
     function setUp() public override {
         TestSetup.setUp();
@@ -15,6 +16,10 @@ contract TestL2Setup is TestSetup {
         vm.label(address(l2token), "l2token");
 
         // deploy DepositsManager
+        data = abi.encodeWithSignature(
+            "initialize()"
+        );
+        depositsManager = DepositsManager(payable(proxy.deploy(address(new DepositsManager()), admin, data)));
 
     }
 }
