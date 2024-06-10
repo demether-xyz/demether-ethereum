@@ -1,5 +1,8 @@
 {
   "name": "dem-ethereum",
   "version": "1.0.0",
-  "author": "jdorado <juancamilo.dorado@gmail.com>"
+  "author": "jdorado <juancamilo.dorado@gmail.com>",
+  "scripts": {
+    "test": "forge test -vv"
+  }
 }
