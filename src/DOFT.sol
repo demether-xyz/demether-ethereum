@@ -8,8 +8,8 @@ TODO
     Make Upgradable using pattern https://blastscan.io/address/0x20ee00f43ef299dba82ba6fef537756dabe38cc7#code
 */
 
-contract DemOFT is OFT {
-    /// @notice Initializes the DemOFT.sol contract.
+contract DOFT is OFT {
+    /// @notice Initializes the DOFT.sol.sol contract.
     /// @param _name The name of the token.
     /// @param _symbol The symbol of the token.
     /// @param _lzEndpoint The LayerZero endpoint address.
