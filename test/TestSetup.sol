@@ -9,6 +9,7 @@ import {DOFT} from "../src/DOFT.sol";
 
 contract TestSetup is Test, TestHelper {
     address internal admin;
+    address internal owner;
     ProxyTester internal proxy = new ProxyTester();
     bytes internal data;
 
@@ -19,6 +20,9 @@ contract TestSetup is Test, TestHelper {
     function setUp() public virtual override {
         admin = vm.addr(uint256(0x123));
         vm.label(admin, "Admin");
+
+        owner = vm.addr(uint256(0x456));
+        vm.label(owner, "Owner");
 
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.UltraLightNode);
