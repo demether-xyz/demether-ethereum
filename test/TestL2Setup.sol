@@ -2,17 +2,15 @@
 pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
-import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 
-contract TestL2Setup is TestSetup, TestHelper {
-
+contract TestL2Setup is TestSetup {
     DemOFT internal l2token;
 
-    function setUp() public override(TestHelper, TestSetup) {
-        TestHelper.setUp();
+    function setUp() public override {
+        TestSetup.setUp();
 
         // deploy token
-//        address endpoint;
-//        l2token = new DemOFT("", "", endpoint, admin);
+        l2token = new DemOFT("", "", address(endpoints[l2Eid]), admin);
+        vm.label(address(l2token), "l2token");
     }
 }
