@@ -13,7 +13,11 @@ The DETH token, based on the DOFT standard, offers upgradability and cross-chain
 
 ### DepositsManager
 
-The DepositsManager contract is the primary interface for user deposits within the Demether protocol. It acts as a crucial intermediary, facilitating seamless communication and coordination between Layer 1 (L1) and Layer 2 (L2) blockchains, managing deposit flows, and optimizing the deployment of assets into various high-yield strategies.
+- User Deposits Interface: Main entry point for user deposits in the Demether protocol.
+- L1 and L2 Coordination: Ensures seamless communication between Layer 1 and Layer 2 blockchains.
+- Deposit Management: Efficiently handles the flow of user deposits.
+- High-Yield Optimization: Allocates assets into high-yield strategies for maximum returns.
+- Funds in WETH: User deposits are held in Wrapped Ether (WETH) for compatibility and liquidity.
 
 #### DepositsManager L1 Flows
 

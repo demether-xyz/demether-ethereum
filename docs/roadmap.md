@@ -23,12 +23,14 @@
 - Deposits on L2 and L1, mint OFT
   - Determine upgrade policy and other auth processes
   - Determine fees settings system
+  - Determine how to close-off system for beta
 - Rate system design 
 - Website, Docs, Socials
 - Points system on deposits
 
 #### P2: Bridge system into L1 from all L2s
 - Bridge Manager system with Layer Zero + Stargate
+- Modular system for funds using canonical bridge
 
 #### P3: Swap system into LST
 - Swap system to mint sfrxETH

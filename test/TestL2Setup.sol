@@ -17,9 +17,10 @@ contract TestL2Setup is TestSetup {
 
         // deploy DepositsManagerL2.sol
         data = abi.encodeWithSignature(
-            "initialize(address,address)",
+            "initialize(address,address,bool)",
             address(wETHL2),
-            owner
+            owner,
+            false
         );
         depositsManagerL2 = DepositsManagerL2(
             payable(proxy.deploy(address(new DepositsManagerL2()), admin, data))
