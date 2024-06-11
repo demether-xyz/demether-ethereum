@@ -21,17 +21,17 @@
 ### Sprints Priorities
 
 #### P1: Deposits contract on L2 for pre-deposits
-- Deposits on L2 and L1, mint OFT
+- Deposits on L2 and L1, mint OFT - OK
   - Determine upgrade policy and other auth processes
   - Determine fees settings system
   - Determine how to close-off system for beta
-- Rate system design 
 - Website, Docs, Socials
 - Points system on deposits
 
 #### P2: Bridge system into L1 from all L2s
-- Bridge Manager system with Layer Zero + Stargate
-- Modular system for funds using canonical bridge
+- Sync tokens with Stargate - OK
+- Message system with LayerZero
+- Rate system design
 
 #### P3: Swap system into LST
 - Swap system to mint sfrxETH
@@ -41,6 +41,10 @@
 
 #### P4: EigenLayer Single Operator Simple system
 - Module to restake into an operator
+- Generalize code for DUSD solution
 - Audit prep
 
 #### P5 Audit 1 on modules deposits, bridge, swap and simple EigenLayer
+
+#### Later
+- Modular system for funds using canonical bridge

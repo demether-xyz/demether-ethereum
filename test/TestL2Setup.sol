@@ -2,8 +2,9 @@
 pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
-import {DepositsManagerL2} from "../src/DepositsManagerL2.sol";
+import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
 import "./mocks/WETH.sol";
+import "./mocks/StarGateMock.sol";
 
 contract TestL2Setup is TestSetup {
     DOFT internal l2token;
@@ -14,6 +15,7 @@ contract TestL2Setup is TestSetup {
         TestSetup.setUp();
 
         wETHL2 = new WETH();
+        StarGateMock stargateL2 = new StarGateMock();
 
         // deploy DepositsManagerL2.sol
         data = abi.encodeWithSignature(
@@ -37,7 +39,8 @@ contract TestL2Setup is TestSetup {
 
         // deploy Messenger
         data = abi.encodeWithSignature(
-            "initialize(address,address)",
+            "initialize(address,address,address)",
+            address(wETHL2),
             address(depositsManagerL2),
             owner
         );
@@ -49,6 +52,19 @@ contract TestL2Setup is TestSetup {
         vm.startPrank(owner);
         depositsManagerL2.setToken(address(l2token));
         depositsManagerL2.setMessenger(address(messenger));
+        messenger.setSyncSettings(
+            l1Eid,
+            IMessenger.Settings(
+                STARGATE,
+                address(stargateL2),
+                l1Eid,
+                address(depositsManagerL1),
+                10 gwei,
+                1e15
+            )
+        );
         vm.stopPrank();
+
+        // todo set token peers >> test L1 to L2 transfers
     }
 }

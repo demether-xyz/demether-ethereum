@@ -28,6 +28,7 @@ contract DepositsManagerL2 is
 {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
+    uint32 internal constant ETHEREUM_CHAIN_ID = 1;
 
     /// @notice Instances of mintable token
     IDOFT public token;
@@ -102,6 +103,20 @@ contract DepositsManagerL2 is
         return amountOut;
     }
 
+    /** SYNC with L1 **/
+
+    function syncTokens() external payable whenNotPaused nonReentrant {
+        uint256 amount = wETH.balanceOf(address(this));
+        if (amount == 0) revert InvalidSyncAmount();
+        messenger.syncTokens{value: msg.value}(
+            ETHEREUM_CHAIN_ID,
+            amount,
+            msg.sender
+        );
+    }
+
+    /** OTHER **/
+
     function setToken(address _token) external onlyOwner {
         require(_token != address(0), "Invalid token");
         token = IDOFT(_token);
@@ -110,6 +125,7 @@ contract DepositsManagerL2 is
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
+        wETH.approve(_messenger, type(uint256).max);
     }
 
     function pause() external onlyOwner whenNotPaused {

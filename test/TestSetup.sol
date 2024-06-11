@@ -12,6 +12,10 @@ import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {Messenger} from "../src/Messenger.sol";
 
 contract TestSetup is Test, TestHelper {
+    uint8 public constant LAYERZERO = 1;
+    uint8 public constant STARGATE = 2;
+    uint8 public constant STARGATE_v2 = 3;
+
     address internal admin;
     address internal owner;
     ProxyTester internal proxy = new ProxyTester();
@@ -67,7 +71,8 @@ contract TestSetup is Test, TestHelper {
 
         // deploy Messenger
         data = abi.encodeWithSignature(
-            "initialize(address,address)",
+            "initialize(address,address,address)",
+            address(wETHL1),
             address(depositsManagerL1),
             owner
         );

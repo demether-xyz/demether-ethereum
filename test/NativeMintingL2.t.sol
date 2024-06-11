@@ -22,4 +22,15 @@ contract NativeMintingL2 is TestL2Setup {
         vm.expectRevert("Native token not supported");
         depositsManagerL2.depositETH{value: 100 ether}();
     }
+
+    function test_L2_sync_tokens() public {
+        uint256 amount = 100 ether;
+        wETHL2.deposit{value: amount}();
+        wETHL2.approve(address(depositsManagerL2), amount);
+        depositsManagerL2.deposit(amount);
+        uint256 fee = 10 gwei; // todo get from messenger
+        depositsManagerL2.syncTokens{value: fee}();
+        assertEq(wETHL2.balanceOf(address(depositsManagerL2)), 0);
+        assertEq(address(depositsManagerL1).balance, 99.9 ether);
+    }
 }
