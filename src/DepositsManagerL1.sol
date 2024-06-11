@@ -9,29 +9,38 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/ILiquidityPool.sol";
+import "./interfaces/IMessenger.sol";
+import "./interfaces/IDepositsManager.sol";
 
 /**
  * @title L1 Deposits Manager
  * @dev Base contract for Layer 1
  * Main entry interface allows users to deposit tokens on Layer 1
  */
+
+/*
+TODO
+    -Change erros format
+*/
 contract DepositsManagerL1 is
     Initializable,
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IDepositsManager
 {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
-
-    event Deposit(address indexed user, uint256 amountIn, uint256 amountOut);
 
     /// @notice Instances of mintable token
     IDOFT public token;
 
     /// @notice Instance of liquidity pool
     ILiquidityPool public pool;
+
+    /// @notice Instance of messenger handler
+    IMessenger public messenger;
 
     /// @notice Wrapped ETH instance
     IWETH9 private wETH;
@@ -120,6 +129,11 @@ contract DepositsManagerL1 is
     function setLiquidityPool(address _pool) external onlyOwner {
         require(_pool != address(0), "Invalid pool");
         pool = ILiquidityPool(_pool);
+    }
+
+    function setMessenger(address _messenger) external onlyOwner {
+        if (_messenger == address(0)) revert InvalidAddress();
+        messenger = IMessenger(_messenger);
     }
 
     function pause() external onlyOwner whenNotPaused {

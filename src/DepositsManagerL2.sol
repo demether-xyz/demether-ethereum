@@ -9,6 +9,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
+import "./interfaces/IMessenger.sol";
+import "./interfaces/IDepositsManager.sol";
 
 /**
  * @title L2 Deposits Manager
@@ -21,15 +23,17 @@ contract DepositsManagerL2 is
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IDepositsManager
 {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 
-    event Deposit(address indexed user, uint256 amountIn, uint256 amountOut);
-
     /// @notice Instances of mintable token
     IDOFT public token;
+
+    /// @notice Instance of messenger handler
+    IMessenger public messenger;
 
     /// @notice Wrapped ETH instance
     IWETH9 private wETH;
@@ -101,6 +105,11 @@ contract DepositsManagerL2 is
     function setToken(address _token) external onlyOwner {
         require(_token != address(0), "Invalid token");
         token = IDOFT(_token);
+    }
+
+    function setMessenger(address _messenger) external onlyOwner {
+        if (_messenger == address(0)) revert InvalidAddress();
+        messenger = IMessenger(_messenger);
     }
 
     function pause() external onlyOwner whenNotPaused {

@@ -35,8 +35,20 @@ contract TestL2Setup is TestSetup {
         );
         vm.label(address(l2token), "l2token");
 
+        // deploy Messenger
+        data = abi.encodeWithSignature(
+            "initialize(address,address)",
+            address(depositsManagerL2),
+            owner
+        );
+        Messenger messenger = Messenger(
+            payable(proxy.deploy(address(new Messenger()), admin, data))
+        );
+
         // setters in DepositsManagerL2.sol
-        vm.prank(owner);
+        vm.startPrank(owner);
         depositsManagerL2.setToken(address(l2token));
+        depositsManagerL2.setMessenger(address(messenger));
+        vm.stopPrank();
     }
 }

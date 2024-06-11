@@ -9,6 +9,7 @@ import "./mocks/WETH.sol";
 import {DOFT} from "../src/DOFT.sol";
 import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
+import {Messenger} from "../src/Messenger.sol";
 
 contract TestSetup is Test, TestHelper {
     address internal admin;
@@ -64,9 +65,20 @@ contract TestSetup is Test, TestHelper {
             payable(proxy.deploy(address(new LiquidityPool()), admin, data))
         );
 
+        // deploy Messenger
+        data = abi.encodeWithSignature(
+            "initialize(address,address)",
+            address(depositsManagerL1),
+            owner
+        );
+        Messenger messenger = Messenger(
+            payable(proxy.deploy(address(new Messenger()), admin, data))
+        );
+
         vm.startPrank(owner);
         depositsManagerL1.setToken(address(l1token));
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
+        depositsManagerL1.setMessenger(address(messenger));
         vm.stopPrank();
     }
 }

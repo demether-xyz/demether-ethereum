@@ -6,7 +6,7 @@
 - Deposits of ETH on L1 and L2s
 
 ### SHOULD:
-- Bridge system
+- Messaging and standard bridge system
 - Swap/Mint system into LST
 - EigenLayer simplified
 
@@ -15,6 +15,7 @@
 - EigenLayer with multiple operators, DEM selection / voting
 - Withdrawal flow
 - Per-chain bridge custom to minimize slippage
+- Canonical bridge for L2 specific
 - DUSD implementation / similarities abstraction
 
 ### Sprints Priorities
