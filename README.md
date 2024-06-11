@@ -1,66 +1,24 @@
-## Foundry
+# Demether
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Demether is a cutting-edge multichain protocol designed to maximize yield across different blockchain networks. By leveraging a sophisticated blend of restaking, stablecoins, and other financial derivatives, Demether ensures efficient and secure high-yield opportunities for its users.
 
-Foundry consists of:
+## Architechture
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+### DOFT
 
-## Documentation
+The DETH token, based on the DOFT standard, offers upgradability and cross-chain transferability via LayerZero technology. It uses a proxy contract pattern for seamless logic upgrades and supports efficient cross-chain communication to optimize gas costs. Compliant with the ERC-20 standard, it includes essential functions for balance management and transfers.
 
-https://book.getfoundry.sh/
+- UUPS upgradable
+- Mintable/Burnable by DepositsManager
 
-## Usage
+### DepositsManager
 
-### Build
+The DepositsManager contract is the primary interface for user deposits within the Demether protocol. It acts as a crucial intermediary, facilitating seamless communication and coordination between Layer 1 (L1) and Layer 2 (L2) blockchains, managing deposit flows, and optimizing the deployment of assets into various high-yield strategies.
 
-```shell
-$ forge build
-```
+#### DepositsManager L1 Flows
 
-### Test
+- User deposits ETH/WETH and mints DETH
 
-```shell
-$ forge test
-```
+#### DepositsManager L2 Flows
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- User deposits ETH/WETH and mints DETH

@@ -2,27 +2,27 @@
 pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
-import {DepositsManager} from "../src/DepositsManager.sol";
+import {DepositsManagerL2} from "../src/DepositsManagerL2.sol";
 import "./mocks/WETH.sol";
 
 contract TestL2Setup is TestSetup {
     DOFT internal l2token;
-    DepositsManager internal depositsManager;
-    WETH public wETH;
+    DepositsManagerL2 internal depositsManagerL2;
+    WETH public wETHL2;
 
     function setUp() public override {
         TestSetup.setUp();
 
-        wETH = new WETH();
+        wETHL2 = new WETH();
 
-        // deploy DepositsManager
+        // deploy DepositsManagerL2.sol
         data = abi.encodeWithSignature(
             "initialize(address,address)",
-            address(wETH),
+            address(wETHL2),
             owner
         );
-        depositsManager = DepositsManager(
-            payable(proxy.deploy(address(new DepositsManager()), admin, data))
+        depositsManagerL2 = DepositsManagerL2(
+            payable(proxy.deploy(address(new DepositsManagerL2()), admin, data))
         );
 
         // deploy token
@@ -30,12 +30,12 @@ contract TestL2Setup is TestSetup {
             "",
             "",
             address(endpoints[l2Eid]),
-            address(depositsManager)
+            address(depositsManagerL2)
         );
         vm.label(address(l2token), "l2token");
 
-        // setters in DepositsManager
+        // setters in DepositsManagerL2.sol
         vm.prank(owner);
-        depositsManager.setToken(address(l2token));
+        depositsManagerL2.setToken(address(l2token));
     }
 }

@@ -11,10 +11,8 @@ import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 
 /**
- * @title L2 Deposits Manager
- * @dev Base contract for Layer 2
- * Main entry interface allows users to deposit tokens on Layer 2, and then sync them to Layer 1
- * using the LayerZero messaging protocol.
+ * @title Abstract Deposits Manager
+ * @dev Base contract with basic flows
  */
 contract DepositsManager is
     Initializable,
