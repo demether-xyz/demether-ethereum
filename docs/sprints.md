@@ -58,3 +58,4 @@
 - Pause contract if rate is stale
 - Unit test when slippage creates unbalances
 - Study level of decentralization / plan
+- Discuss feature to accept OFT tokens / sfrxETH

@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+// *******************************************************
+// *    ____                      _   _                  *
+// *   |  _ \  ___ _ __ ___   ___| |_| |__   ___ _ __    *
+// *   | | | |/ _ \ '_ ` _ \ / _ \ __| '_ \ / _ \ '__|   *
+// *   | |_| |  __/ | | | | |  __/ |_| | | |  __/ |      *
+// *   |____/ \___|_| |_| |_|\___|\__|_| |_|\___|_|      *
+// *******************************************************
+// Demether Finance: https://github.com/demetherdefi
+
+// Primary Author(s)
+// Juan C. Dorado: https://github.com/jdorado/
+
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -45,6 +57,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         shares += share;
 
         emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
+
+        // todo mint frax
+        // send to EigenLayer strategies
     }
 
     function _sharesForDepositAmount(uint256 _depositAmount) internal view returns (uint256) {
@@ -56,6 +71,8 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function getRate() external view returns (uint256) {
+        // todo create a cadence mechanism to create epochs and then within epochs liquidate rewards
+
         uint256 totalShares = shares;
         if (totalShares == 0) {
             return 1 ether;
