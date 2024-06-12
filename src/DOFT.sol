@@ -24,18 +24,12 @@ contract DOFT is OFT {
         _transferOwnership(_delegate);
     }
 
-    function mint(
-        address _to,
-        uint256 _amount
-    ) external onlyOwner returns (bool) {
+    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
         _mint(_to, _amount);
         return true;
     }
 
-    function burn(
-        address _from,
-        uint256 _amount
-    ) external onlyOwner returns (bool) {
+    function burn(address _from, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_from, _amount);
         return true;
     }

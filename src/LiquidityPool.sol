@@ -11,21 +11,11 @@ import "./interfaces/ILiquidityPool.sol";
  * @title LiquidityPool
  * @dev Contracts holds ETH and determines the global rate
  */
-contract LiquidityPool is
-    Initializable,
-    OwnableUpgradeable,
-    UUPSUpgradeable,
-    ILiquidityPool
-{
+contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, ILiquidityPool {
     error InvalidAmount();
     error InvalidCaller();
 
-    event AddLiquidity(
-        uint256 amount,
-        uint256 shares,
-        uint256 totalAmount,
-        uint256 totalShares
-    );
+    event AddLiquidity(uint256 amount, uint256 shares, uint256 totalAmount, uint256 totalShares);
 
     /// @notice Contract able to manage the funds
     address private depositsManager;
@@ -33,10 +23,7 @@ contract LiquidityPool is
     /// @notice Amount of total shares issued
     uint256 public shares;
 
-    function initialize(
-        address _depositsManager,
-        address _owner
-    ) external initializer onlyProxy {
+    function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
         require(_depositsManager != address(0), "_depositsManager address");
 
         __Ownable_init(); // TODO determine upgrade policy and other auth processes
@@ -53,17 +40,14 @@ contract LiquidityPool is
 
         uint256 amount = msg.value;
         uint256 share = _sharesForDepositAmount(amount);
-        if (amount > type(uint128).max || amount == 0 || share == 0)
-            revert InvalidAmount();
+        if (amount > type(uint128).max || amount == 0 || share == 0) revert InvalidAmount();
 
         shares += share;
 
         emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
     }
 
-    function _sharesForDepositAmount(
-        uint256 _depositAmount
-    ) internal view returns (uint256) {
+    function _sharesForDepositAmount(uint256 _depositAmount) internal view returns (uint256) {
         uint256 totalPooledEther = getTotalPooledEther() - _depositAmount;
         if (totalPooledEther == 0) {
             return _depositAmount;
@@ -83,9 +67,7 @@ contract LiquidityPool is
         return address(this).balance; // TODO upgrade later given system for staking, etc
     }
 
-    function _authorizeUpgrade(
-        address _newImplementation
-    ) internal view override onlyOwner {
+    function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         require(_newImplementation.code.length > 0, "NOT_CONTRACT");
     }
 }

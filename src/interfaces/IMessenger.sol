@@ -6,27 +6,30 @@ interface IMessenger {
     error InvalidContract();
     error Unauthorized();
     error BridgeNotSupported();
-    error FeeInsufficient();
+    error InsufficientFee();
+    error InvalidParametersLength();
+    error OnlyEndpoint(address);
+    error OnlyPeer(uint32, address);
 
-    event SyncTokens(
-        uint32 indexed chainId,
-        uint8 bridgeId,
-        uint256 amount,
-        uint256 slippage
-    );
+    event SyncTokens(uint32 indexed chainId, uint8 bridgeId, uint256 amount, uint256 slippage);
 
     struct Settings {
+        // local info
         uint8 bridgeId;
-        address router;
+        // destination info
+        uint32 chainId;
         uint32 bridgeChainId;
         address toAddress;
+        // settings
         uint256 minFee;
         uint256 maxSlippage;
+        bytes options;
     }
 
-    function syncTokens(
-        uint32 chainId,
-        uint256 amount,
-        address refund
-    ) external payable;
+    function syncTokens(uint32 chainId, uint256 amount, address refund) external payable;
+
+    function syncMessage(uint32 chainId, bytes calldata data, address refund) external payable;
+
+    event SettingsTokens(uint32 indexed chainId, uint8 bridgeId, address toAddress);
+    event SettingsMessages(uint32 indexed chainId, uint8 bridgeId, address toAddress);
 }

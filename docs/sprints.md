@@ -18,7 +18,7 @@
 - Canonical bridge for L2 specific
 - DUSD implementation / similarities abstraction
 
-### Sprints Priorities
+## Sprints
 
 #### P1: Deposits contract on L2 for pre-deposits
 - Deposits on L2 and L1, mint OFT - OK
@@ -26,7 +26,6 @@
   - Determine fees settings system
   - Determine how to close-off system for beta
 - Website, Docs, Socials
-- Points system on deposits
 
 #### P2: Bridge system into L1 from all L2s
 - Sync tokens with Stargate - OK
@@ -43,8 +42,12 @@
 - Module to restake into an operator
 - Generalize code for DUSD solution
 - Audit prep
+  - [Audit Handbook](https://hackmd.io/sfWNlhdnSHu54bDY7p_S5Q) 
+  - [Readiness Checklist](https://github.com/nascentxyz/simple-security-toolkit/blob/main/audit-readiness-checklist.md)
 
 #### P5 Audit 1 on modules deposits, bridge, swap and simple EigenLayer
 
 #### Later
 - Modular system for funds using canonical bridge
+- StarGate v2
+- Points system on deposits

@@ -4,7 +4,8 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 
 contract NativeMintingL1 is TestSetup {
-    function test_L1_native_minting_rate() public {
+    function test_L1_minting_rate() public {
+        // todo revisit
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
     }
@@ -35,5 +36,15 @@ contract NativeMintingL1 is TestSetup {
         address pool = address(depositsManagerL1.pool());
         vm.deal(pool, pool.balance + 10 ether);
         assertEq(depositsManagerL1.getRate(), 1.1 ether);
+    }
+
+    function test_L1_sync_rate() public {
+        uint32[] memory _chainId = new uint32[](1);
+        uint256[] memory _chainFee = new uint256[](1);
+        uint256 fee = 10 gwei; // todo get from contract
+        _chainId[0] = l2Eid;
+        _chainFee[0] = fee;
+        depositsManagerL1.syncRate{value: fee}(_chainId, _chainFee);
+        _sync();
     }
 }

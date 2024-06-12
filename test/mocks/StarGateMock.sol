@@ -20,10 +20,7 @@ contract StarGateMock {
         uint256 _amountLD, // the amount, in Local Decimals, to be swapped
         uint256 _minAmountLD // the minimum amount accepted out on destination
     ) public payable {
-        require(
-            msg.value > _amountLD,
-            "Stargate: msg.value must be > _amountLD"
-        );
+        require(msg.value > _amountLD, "Stargate: msg.value must be > _amountLD");
 
         // wrap the ETH into WETH
         // IStargateEthVault(stargateEthVault).deposit{value: _amountLD}();
@@ -35,10 +32,7 @@ contract StarGateMock {
 
         // compose a stargate swap() using the WETH that was just wrapped
         require(_amountLD > 0, "Stargate: cannot swap 0");
-        require(
-            _refundAddress != address(0x0),
-            "Stargate: _refundAddress cannot be 0x0"
-        );
+        require(_refundAddress != address(0x0), "Stargate: _refundAddress cannot be 0x0");
 
         uint256 fees = 1e15; // 0.1 %
         uint256 feeAmount = (_amountLD * fees + PRECISION_SUB_ONE) / PRECISION;
@@ -53,15 +47,7 @@ contract StarGateMock {
         SendParam calldata sendParam,
         MessagingFee calldata,
         address refundAddress
-    )
-        public
-        payable
-        returns (
-            MessagingReceipt memory msgReceipt,
-            OFTReceipt memory oftReceipt,
-            Ticket memory ticket
-        )
-    {
+    ) public payable returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt, Ticket memory ticket) {
         swapETH(
             uint16(sendParam.dstEid),
             payable(refundAddress),
@@ -71,9 +57,7 @@ contract StarGateMock {
         );
     }
 
-    function decodeAddress(
-        bytes memory data
-    ) public pure returns (address addr) {
+    function decodeAddress(bytes memory data) public pure returns (address addr) {
         require(data.length == 0x14);
         assembly {
             addr := mload(add(data, 0x14))

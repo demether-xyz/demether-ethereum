@@ -11,7 +11,7 @@ import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IDepositsManager.sol";
-
+import "forge-std/console.sol"; // todo remove
 /**
  * @title L2 Deposits Manager
  * @dev Base contract for Layer 2
@@ -42,11 +42,7 @@ contract DepositsManagerL2 is
     /// @notice Chain native token is ETH
     bool private nativeSupport;
 
-    function initialize(
-        address _wETH,
-        address _owner,
-        bool _nativeSupport
-    ) external initializer onlyProxy {
+    function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
         require(_wETH != address(0), "Invalid wETH");
 
         __Ownable_init(); // TODO determine upgrade policy and other auth processes
@@ -60,23 +56,12 @@ contract DepositsManagerL2 is
         transferOwnership(_owner);
     }
 
-    function deposit(
-        uint256 _amountIn
-    ) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(
-            wETH.transferFrom(address(msg.sender), address(this), _amountIn),
-            "Deposit Failed"
-        );
+    function deposit(uint256 _amountIn) external whenNotPaused nonReentrant returns (uint256 amountOut) {
+        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
         amountOut = _deposit(_amountIn);
     }
 
-    function depositETH()
-        external
-        payable
-        whenNotPaused
-        nonReentrant
-        returns (uint256 amountOut)
-    {
+    function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
         wETH.deposit{value: address(this).balance}();
         amountOut = _deposit(msg.value);
@@ -90,14 +75,11 @@ contract DepositsManagerL2 is
     }
 
     // todo check method given the dust audit
-    function getConversionAmount(
-        uint256 _amountIn
-    ) public returns (uint256 amountOut) {
+    function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
         // TODO move to module for exchange rate of itself that gets rates from L1
         uint256 depositFee = 1e15; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 rate = 1e18; // TODO system to get the rates
-        uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) /
-            PRECISION;
+        uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
         return amountOut;
@@ -108,11 +90,13 @@ contract DepositsManagerL2 is
     function syncTokens() external payable whenNotPaused nonReentrant {
         uint256 amount = wETH.balanceOf(address(this));
         if (amount == 0) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(
-            ETHEREUM_CHAIN_ID,
-            amount,
-            msg.sender
-        );
+        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, amount, msg.sender);
+    }
+
+    function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
+        if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
+        // TODO process message
+        console.log("MESSAGE RECEIVED");
     }
 
     /** OTHER **/
@@ -136,9 +120,7 @@ contract DepositsManagerL2 is
         _unpause();
     }
 
-    function _authorizeUpgrade(
-        address _newImplementation
-    ) internal view override onlyOwner {
+    function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         require(_newImplementation.code.length > 0, "NOT_CONTRACT");
     }
 }
