@@ -89,14 +89,14 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
     function syncMessage(uint32 _destination, bytes calldata _data, address _refund) external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
-        Settings memory _settings = settings_messages[_destination];
-        if (msg.value < _settings.minFee) revert InsufficientFee();
+        Settings memory settings = settings_messages[_destination];
+        if (msg.value < settings.minFee) revert InsufficientFee();
 
-        address router = routers[_settings.bridgeId];
-        if (_settings.bridgeId == 0 || _settings.toAddress == address(0) || router == address(0)) {
+        address router = routers[settings.bridgeId];
+        if (settings.bridgeId == 0 || settings.toAddress == address(0) || router == address(0)) {
             revert BridgeNotSupported();
-        } else if (_settings.bridgeId == LAYERZERO) {
-            _sync_LayerZero(_settings, router, _data, _refund);
+        } else if (settings.bridgeId == LAYERZERO) {
+            _sync_LayerZero(settings, router, _data, _refund);
         }
     }
 
@@ -158,6 +158,19 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
     function allowInitializePath(Origin calldata _origin) public view virtual returns (bool) {
         Settings memory _settings = settings_messages[_origin.srcEid];
         return addressToBytes32(_settings.toAddress) == _origin.sender;
+    }
+
+    function quoteLayerZero(uint32 _destination) public view returns (uint256) {
+        Settings memory settings = settings_messages[_destination];
+        bytes32 receiver = addressToBytes32(settings.toAddress);
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
+        bytes memory data = abi.encode(1, 1 ether, 1 ether); // sample payload
+        address router = routers[settings.bridgeId];
+        MessagingFee memory fee = ILayerZeroEndpointV2(router).quote(
+            MessagingParams(settings.bridgeChainId, receiver, data, options, false),
+            address(this)
+        );
+        return fee.nativeFee;
     }
 
     /** STARGATE **/

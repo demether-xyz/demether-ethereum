@@ -33,18 +33,28 @@ contract NativeMintingL1 is TestSetup {
         depositsManagerL1.addLiquidity();
 
         // create rewards in the pool
-        address pool = address(depositsManagerL1.pool());
-        vm.deal(pool, pool.balance + 10 ether);
+        _rewards(10 ether);
         assertEq(depositsManagerL1.getRate(), 1.1 ether);
     }
 
     function test_L1_sync_rate() public {
-        uint32[] memory _chainId = new uint32[](1);
-        uint256[] memory _chainFee = new uint256[](1);
-        uint256 fee = 10 gwei; // todo get from contract
-        _chainId[0] = l2Eid;
-        _chainFee[0] = fee;
-        depositsManagerL1.syncRate{value: fee}(_chainId, _chainFee);
-        _sync();
+        depositsManagerL1.depositETH{value: 100 ether}();
+        depositsManagerL1.addLiquidity();
+
+        assertEq(depositsManagerL1.getRate(), 1 ether);
+        assertEq(depositsManagerL2.getRate(), 1 ether);
+
+        // increase rate L1
+        _rewards(10 ether);
+        assertEq(depositsManagerL1.getRate(), 1.1 ether);
+        assertEq(depositsManagerL2.getRate(), 1 ether);
+
+        // sync L2
+        _sync_rate();
+        assertEq(depositsManagerL2.getRate(), 1.1 ether);
+    }
+
+    function test_L1_quote() public {
+        assert(messengerL1.quoteLayerZero(l2Eid) > 0);
     }
 }

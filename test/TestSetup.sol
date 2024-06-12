@@ -154,6 +154,7 @@ contract TestSetup is Test, TestHelper {
         _setUp_L1();
         _setUp_L2();
         _settings();
+        _sync_rate();
     }
 
     /// @dev LayerZero syncing
@@ -163,5 +164,21 @@ contract TestSetup is Test, TestHelper {
 
         // destination L2
         verifyPackets(l2Eid, addressToBytes32(address(messengerL2)));
+    }
+
+    function _sync_rate() internal {
+        uint32[] memory _chainId = new uint32[](1);
+        uint256[] memory _chainFee = new uint256[](1);
+        uint256 fee = 10 gwei;
+        _chainId[0] = l2Eid;
+        _chainFee[0] = fee;
+        vm.roll(block.number + 1);
+        depositsManagerL1.syncRate{value: fee}(_chainId, _chainFee);
+        _sync();
+    }
+
+    function _rewards(uint256 amount) internal {
+        address pool = address(depositsManagerL1.pool());
+        vm.deal(pool, pool.balance + amount);
     }
 }

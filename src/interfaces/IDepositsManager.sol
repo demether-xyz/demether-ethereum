@@ -7,6 +7,9 @@ interface IDepositsManager {
     error InvalidParametersLength();
     error InsufficientFee();
     error Unauthorized();
+    error InvalidMessageCode();
+    error RateInvalid(uint256);
     event Deposit(address indexed user, uint256 amountIn, uint256 amountOut);
     function onMessageReceived(uint32 chainId, bytes calldata message) external;
+    function getRate() external view returns (uint256);
 }

@@ -29,6 +29,7 @@ contract DepositsManagerL2 is
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
+    uint256 private constant MESSAGE_SYNC_RATE = 1;
 
     /// @notice Instances of mintable token
     IDOFT public token;
@@ -41,6 +42,12 @@ contract DepositsManagerL2 is
 
     /// @notice Chain native token is ETH
     bool private nativeSupport;
+
+    /// @notice Exchange rate from L1
+    uint256 private rate;
+
+    /// @notice Rate block
+    uint256 public rateSyncBlock;
 
     function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
         require(_wETH != address(0), "Invalid wETH");
@@ -74,15 +81,17 @@ contract DepositsManagerL2 is
         require(token.mint(msg.sender, amountOut), "Token minting failed");
     }
 
-    // todo check method given the dust audit
-    function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
-        // TODO move to module for exchange rate of itself that gets rates from L1
+    function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
+        if (rateSyncBlock == 0) revert RateInvalid(rate);
         uint256 depositFee = 1e15; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
-        uint256 rate = 1e18; // TODO system to get the rates
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
         return amountOut;
+    }
+
+    function getRate() public view returns (uint256) {
+        return rate;
     }
 
     /** SYNC with L1 **/
@@ -95,8 +104,16 @@ contract DepositsManagerL2 is
 
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
-        // TODO process message
-        console.log("MESSAGE RECEIVED");
+        uint256 code = abi.decode(_message, (uint256));
+        if (code == MESSAGE_SYNC_RATE) {
+            (, uint256 _block, uint256 _rate) = abi.decode(_message, (uint256, uint256, uint256));
+            if (_block > rateSyncBlock) {
+                rate = _rate;
+                rateSyncBlock = _block;
+            }
+        } else {
+            revert InvalidMessageCode();
+        }
     }
 
     /** OTHER **/

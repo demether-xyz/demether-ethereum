@@ -29,7 +29,7 @@ contract NativeMintingL2 is TestSetup {
         wETHL2.deposit{value: amount}();
         wETHL2.approve(address(depositsManagerL2), amount);
         depositsManagerL2.deposit(amount);
-        uint256 fee = 10 gwei; // todo get from messenger
+        uint256 fee = 10 gwei;
         depositsManagerL2.syncTokens{value: fee}();
         assertEq(wETHL2.balanceOf(address(depositsManagerL2)), 0);
         assertEq(address(depositsManagerL1).balance, 99.9 ether);

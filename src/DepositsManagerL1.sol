@@ -32,6 +32,7 @@ contract DepositsManagerL1 is
 {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
+    uint256 private constant MESSAGE_SYNC_RATE = 1;
 
     /// @notice Instances of mintable token
     IDOFT public token;
@@ -80,11 +81,9 @@ contract DepositsManagerL1 is
         require(token.mint(msg.sender, amountOut), "Token minting failed");
     }
 
-    // todo check method given the dust audit
     function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
-        // TODO move to module for exchange rate of itself that gets rates from L1
         uint256 depositFee = 0; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
-        uint256 rate = 1e18; // TODO system to get the rates
+        uint256 rate = getRate();
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
@@ -105,11 +104,7 @@ contract DepositsManagerL1 is
 
     function syncRate(uint32[] calldata _chainId, uint256[] calldata _chainFee) external payable whenNotPaused nonReentrant {
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
-        bytes memory data = abi.encode(
-            1, // TODO do we need a code????
-            block.number,
-            getRate()
-        );
+        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
             messenger.syncMessage{value: _chainFee[i]}(_chainId[i], data, msg.sender);
