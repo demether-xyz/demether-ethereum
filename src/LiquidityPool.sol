@@ -16,7 +16,7 @@ pragma solidity ^0.8.26;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { ERC20, ERC4626, xERC4626 } from "ERC4626/xERC4626.sol";
+import { FixedPointMathLib } from "solmate/utils/FixedPointMathLib.sol";
 import "@frxETH/IsfrxETH.sol";
 
 import "./interfaces/ILiquidityPool.sol";
@@ -27,11 +27,9 @@ import "forge-std/console.sol"; // todo remove
  * @dev Contracts holds ETH and determines the global rate
  */
 
-/*
-TODO
- - Study using ERC4626 instead to abstract logic
-*/
 contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, ILiquidityPool {
+    using FixedPointMathLib for uint256;
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 
@@ -39,7 +37,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     address private depositsManager;
 
     /// @notice Amount of total shares issued
-    uint256 public shares;
+    uint256 public totalSupply;
 
     /// @notice Address of the frax minter
     address public fraxMinter;
@@ -68,28 +66,17 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /** FUNDS MANAGEMENT */
 
-
-
-
-
-    function convertToShares(uint256 _assets) public view returns (uint256) {
-        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.
-
-        return supply == 0 ? assets : assets.mulDivDown(supply, totalAssets());
-    }
-
-
     /// @notice Received ETH and mints shares to determine rate
     function addLiquidity() external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
         uint256 amount = msg.value;
-        uint256 share = _sharesForDepositAmount(amount);
-        if (amount > type(uint128).max || amount == 0 || share == 0) revert InvalidAmount();
+        uint256 shares = convertToShares(amount);
+        if (amount == 0 || shares == 0) revert InvalidAmount();
 
         shares += share;
 
-        emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
+//        emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
 
         // mint sfrxETH
         _stakeETH();
@@ -97,42 +84,57 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         // send to EigenLayer strategies
     }
 
-    // todo make view
-    function _sharesForDepositAmount(uint256 _depositAmount) internal returns (uint256) {
-        uint256 totalIncludingDeposit = _getTotalPooledEther();
-        uint256 totalPooledEther = totalIncludingDeposit - _depositAmount;
-
-        // Adjust for rewards
-        if (lastTotalPooledEther == 0){
-            lastTotalPooledEther = totalIncludingDeposit;
-        } else {
-            uint256 newRewards = totalPooledEther - lastTotalPooledEther;
-            uint256 rewardsFee = _getFee(newRewards, protocolFee);
-            totalPooledEther -= rewardsFee;
-            accumulatedRewards += rewardsFee;
-        }
-
-        if (totalPooledEther == 0) {
-            return _depositAmount;
-        }
-        return (_depositAmount * shares) / totalPooledEther;
-    }
-
-    // todo revisit
-    function getRate() external view returns (uint256) {
-        // todo create a cadence mechanism to create epochs and then within epochs liquidate rewards
-        uint256 totalShares = shares;
-        if (totalShares == 0) {
-            return 1 ether;
-        }
-        return (1 ether * getTotalPooledEther()) / totalShares;
-    }
-
-    function _getTotalPooledEther() internal view returns (uint256) {
+    function totalAssets() public view virtual returns (uint256){
         IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
         uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
         return address(this).balance + sfrxETH_balance;
     }
+
+    function convertToShares(uint256 _deposit) public view returns (uint256) {
+        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.
+        uint256 totalPooledEther = totalAssets() - _deposit;
+
+        return supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalAssets());
+    }
+
+    ///////////////
+
+    // todo make view
+//    function _sharesForDepositAmount(uint256 _depositAmount) internal returns (uint256) {
+//        uint256 totalIncludingDeposit = _getTotalPooledEther();
+//        uint256 totalPooledEther = totalIncludingDeposit - _depositAmount;
+//
+//        // Adjust for rewards
+//        if (lastTotalPooledEther == 0){
+//            lastTotalPooledEther = totalIncludingDeposit;
+//        } else {
+//            uint256 newRewards = totalPooledEther - lastTotalPooledEther;
+//            uint256 rewardsFee = _getFee(newRewards, protocolFee);
+//            totalPooledEther -= rewardsFee;
+//            accumulatedRewards += rewardsFee;
+//        }
+//
+//        if (totalPooledEther == 0) {
+//            return _depositAmount;
+//        }
+//        return (_depositAmount * shares) / totalPooledEther;
+//    }
+
+    // todo revisit
+    function getRate() external view returns (uint256) {
+        // todo create a cadence mechanism to create epochs fand then within epochs liquidate rewards
+        uint256 totalShares = totalSupply;
+        if (totalShares == 0) {
+            return 1 ether;
+        }
+        return (1 ether * totalAssets()) / totalShares;
+    }
+
+//    function _getTotalPooledEther() internal view returns (uint256) {
+//        IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
+//        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
+//        return address(this).balance + sfrxETH_balance;
+//    }
 
     /** YIELD STRATEGIES */
 
