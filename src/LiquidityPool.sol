@@ -45,11 +45,14 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /// @notice Protocol fee destination
     address public protocolTreasury;
 
-    /// @notice Tracks the last total pooled ether
-    uint256 private lastTotalPooledEther;
-
     /// @notice Fee charged for protocol on rewards
     uint256 public protocolFee;
+
+    /// @notice Total fees accrued not yet paid out
+    uint256 public protocolAccruedFees;
+
+    /// @notice Tracks the last total pooled ether
+    uint256 private lastTotalPooledEther;
 
     function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
@@ -79,16 +82,28 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
         emit AddLiquidity(amount, shares, totalPooledAssets, shares);
 
-        // mint sfrxETH
-        _stakeETH();
+        // pay-out fees
+        uint256 balance = address(this).balance;
+        if (protocolAccruedFees > 0 && balance > 0) {
+            uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
+            protocolAccruedFees -= toPay;
+            (bool success, ) = protocolTreasury.call{value: toPay}("");
+            if (!success) revert TransferFailed(protocolTreasury);
+        }
 
-        // send to EigenLayer strategies
+        // mint sfrxETH
+        if (address(this).balance > 0) {
+            _stakeETH();
+
+            // send to EigenLayer strategies
+            // increase the rate on sfrx and then
+        }
     }
 
     function totalAssets() public view virtual returns (uint256) {
         IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
         uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
-        return address(this).balance + sfrxETH_balance;
+        return address(this).balance + sfrxETH_balance - protocolAccruedFees;
     }
 
     function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
@@ -104,9 +119,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
             totalPooledEther -= rewardsFee;
             totalPooledEtherWithDeposit -= rewardsFee;
-
-            (bool success, ) = protocolTreasury.call{value: rewardsFee}("");
-            if (!success) revert TransferFailed(protocolTreasury);
+            protocolAccruedFees += rewardsFee;
         }
         lastTotalPooledEther = totalPooledEtherWithDeposit;
         shares = supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);

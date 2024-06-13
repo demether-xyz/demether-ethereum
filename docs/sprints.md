@@ -34,14 +34,14 @@
 #### P3: Swap system into LST
 - Stake system to mint sfrxETH - OK
 - Fees: rewards fee system - OK
-- Fees: deposit, withdrawals to cover bridging costs
-- Unit test when slippage creates unbalances
+- Unit test when slippage creates unbalances - OK
 
 #### P4: EigenLayer single operator
 - Module to restake into an operator
 
 #### P5: Generalization DUSD prep
 - Generalize code for DUSD solution
+- Fees: deposit, withdrawals to cover bridging costs
 
 #### P6: Withdrawals support
 - Withdrawals/Claims flow

@@ -160,8 +160,8 @@ contract TestSetup is Test, TestHelper {
             )
         );
 
-        // StarGate for tokens
-        messengerL2.setSettingsTokens(l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 1e15, ""));
+        // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
+        messengerL2.setSettingsTokens(l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, ""));
 
         // todo set token peers >> test L1 to L2 transfers
         vm.stopPrank();

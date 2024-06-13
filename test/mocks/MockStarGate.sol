@@ -7,6 +7,12 @@ contract MockStarGate {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 
+    uint256 public slippage;
+
+    constructor() {
+        slippage = 2e15; // 0.2 %;
+    }
+
     struct Ticket {
         uint56 ticketId;
         bytes passenger;
@@ -34,8 +40,7 @@ contract MockStarGate {
         require(_amountLD > 0, "Stargate: cannot swap 0");
         require(_refundAddress != address(0x0), "Stargate: _refundAddress cannot be 0x0");
 
-        uint256 fees = 1e15; // 0.1 %
-        uint256 feeAmount = (_amountLD * fees + PRECISION_SUB_ONE) / PRECISION;
+        uint256 feeAmount = (_amountLD * slippage + PRECISION_SUB_ONE) / PRECISION;
         require(_amountLD - feeAmount >= _minAmountLD, "!slippage");
 
         address toAddress = decodeAddress(_toAddress);
@@ -55,6 +60,10 @@ contract MockStarGate {
             sendParam.amountLD,
             sendParam.minAmountLD
         );
+    }
+
+    function setSlippage(uint256 _slippage) external {
+        slippage = _slippage;
     }
 
     function decodeAddress(bytes memory data) public pure returns (address addr) {
