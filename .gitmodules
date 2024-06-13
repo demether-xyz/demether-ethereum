@@ -25,3 +25,6 @@
 [submodule "lib/frxETH-public"]
 	path = lib/frxETH-public
 	url = https://github.com/FraxFinance/frxETH-public
+[submodule "lib/ERC4626"]
+	path = lib/ERC4626
+	url = https://github.com/corddry/ERC4626
