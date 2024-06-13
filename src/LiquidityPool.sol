@@ -19,7 +19,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IfrxETHMinter.sol";
-
+import "@frxETH/IsfrxETH.sol";
+import "forge-std/console.sol"; // todo remove
 /**
  * @title LiquidityPool
  * @dev Contracts holds ETH and determines the global rate
@@ -53,7 +54,6 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /// @notice Received ETH and mints shares to determine rate
     function addLiquidity() external payable {
-        // TODO confirm we need it in ETH and not WETH depending on the strategies
         if (msg.sender != depositsManager) revert Unauthorized();
 
         uint256 amount = msg.value;
@@ -88,7 +88,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function getTotalPooledEther() public view returns (uint256) {
-        return address(this).balance; // TODO upgrade later given system for staking, etc
+        IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
+        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
+        return address(this).balance + sfrxETH_balance;
     }
 
     /** YIELD STRATEGIES */

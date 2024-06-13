@@ -5,9 +5,9 @@ import {Test, console} from "forge-std/Test.sol";
 
 import "@foundry-upgrades/ProxyTester.sol";
 import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
-import { frxETH } from "@frxETH/frxETH.sol";
-import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
-import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
+import {frxETH} from "@frxETH/frxETH.sol";
+import {sfrxETH, ERC20 as ERC20_2} from "@frxETH/sfrxETH.sol";
+import {frxETHMinter} from "@frxETH/frxETHMinter.sol";
 
 import {DOFT} from "../src/DOFT.sol";
 import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
@@ -53,7 +53,14 @@ contract TestSetup is Test, TestHelper {
         // Deploy frxETH, sfrxETH
         frxETH frxETHtoken = new frxETH(admin, admin);
         sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1000);
-        frxETHMinterContract = new frxETHMinter(0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b, address(frxETHtoken), address(sfrxETHtoken), admin, admin, "");
+        frxETHMinterContract = new frxETHMinter(
+            0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b,
+            address(frxETHtoken),
+            address(sfrxETHtoken),
+            admin,
+            admin,
+            ""
+        );
         vm.prank(admin);
         frxETHtoken.addMinter(address(frxETHMinterContract));
 

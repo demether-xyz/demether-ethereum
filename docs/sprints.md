@@ -32,7 +32,7 @@
 - Rate system design - OK
 
 #### P3: Swap system into LST
-- Swap system to mint sfrxETH
+- Stake system to mint sfrxETH - OK
 - Fees: rewards fee system with epochs
 - Fees: deposit, withdrawals to cover bridging costs
 - Unit test when slippage creates unbalances
