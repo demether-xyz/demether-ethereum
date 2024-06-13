@@ -34,7 +34,16 @@ contract NativeMintingL1 is TestSetup {
 
         // create rewards in the pool
         _rewards(10 ether);
-        assertEq(depositsManagerL1.getRate(), 1.1 ether);
+
+        // accounts for the 10% protocol fee
+        assertEq(depositsManagerL1.getRate(), 1.09 ether);
+
+        // add liquidity
+        depositsManagerL1.depositETH{value: 109 ether}();
+        depositsManagerL1.addLiquidity();
+        assertEq(depositsManagerL1.getRate(), 1.09 ether);
+        assertEq(liquidityPool.totalAssets(), 218 ether);
+        assertEq(liquidityPool.totalShares(), 200 ether);
     }
 
     function test_L1_sync_rate() public {
@@ -46,12 +55,12 @@ contract NativeMintingL1 is TestSetup {
 
         // increase rate L1
         _rewards(10 ether);
-        assertEq(depositsManagerL1.getRate(), 1.1 ether);
+        assertEq(depositsManagerL1.getRate(), 1.09 ether);
         assertEq(depositsManagerL2.getRate(), 1 ether);
 
         // sync L2
         _sync_rate();
-        assertEq(depositsManagerL2.getRate(), 1.1 ether);
+        assertEq(depositsManagerL2.getRate(), 1.09 ether);
     }
 
     function test_L1_quote() public {

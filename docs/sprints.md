@@ -33,7 +33,7 @@
 
 #### P3: Swap system into LST
 - Stake system to mint sfrxETH - OK
-- Fees: rewards fee system with epochs
+- Fees: rewards fee system - OK
 - Fees: deposit, withdrawals to cover bridging costs
 - Unit test when slippage creates unbalances
 

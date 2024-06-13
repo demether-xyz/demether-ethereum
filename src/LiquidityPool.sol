@@ -16,7 +16,7 @@ pragma solidity ^0.8.26;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { FixedPointMathLib } from "solmate/utils/FixedPointMathLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import "@frxETH/IsfrxETH.sol";
 
 import "./interfaces/ILiquidityPool.sol";
@@ -37,16 +37,16 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     address private depositsManager;
 
     /// @notice Amount of total shares issued
-    uint256 public totalSupply;
+    uint256 public totalShares;
 
     /// @notice Address of the frax minter
     address public fraxMinter;
 
+    /// @notice Protocol fee destination
+    address public protocolTreasury;
+
     /// @notice Tracks the last total pooled ether
     uint256 private lastTotalPooledEther;
-
-    /// @notice Accumulated rewards to be paid to protocol
-    uint256 private accumulatedRewards;
 
     /// @notice Fee charged for protocol on rewards
     uint256 public protocolFee;
@@ -61,7 +61,8 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         transferOwnership(_owner);
 
         // initial fee setting
-        protocolFee = 1e16; // 0.1%;
+        protocolFee = 1e17; // 10%;
+        protocolTreasury = _owner;
     }
 
     /** FUNDS MANAGEMENT */
@@ -71,12 +72,12 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         if (msg.sender != depositsManager) revert Unauthorized();
 
         uint256 amount = msg.value;
-        uint256 shares = convertToShares(amount);
+        (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
         if (amount == 0 || shares == 0) revert InvalidAmount();
 
-        shares += share;
+        totalShares += shares;
 
-//        emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
+        emit AddLiquidity(amount, shares, totalPooledAssets, shares);
 
         // mint sfrxETH
         _stakeETH();
@@ -84,57 +85,47 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         // send to EigenLayer strategies
     }
 
-    function totalAssets() public view virtual returns (uint256){
+    function totalAssets() public view virtual returns (uint256) {
         IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
         uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
         return address(this).balance + sfrxETH_balance;
     }
 
-    function convertToShares(uint256 _deposit) public view returns (uint256) {
-        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.
-        uint256 totalPooledEther = totalAssets() - _deposit;
+    function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
+        uint256 supply = totalShares;
+        totalPooledEtherWithDeposit = totalAssets();
+        uint256 totalPooledEther = totalPooledEtherWithDeposit - _deposit;
 
-        return supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalAssets());
-    }
+        // Adjust for rewards
+        if (lastTotalPooledEther != 0) {
+            uint256 newRewards = totalPooledEther - lastTotalPooledEther;
+            uint256 rewardsFee = _getFee(newRewards, protocolFee);
+            emit RewardsProtocol(rewardsFee);
 
-    ///////////////
+            totalPooledEther -= rewardsFee;
+            totalPooledEtherWithDeposit -= rewardsFee;
 
-    // todo make view
-//    function _sharesForDepositAmount(uint256 _depositAmount) internal returns (uint256) {
-//        uint256 totalIncludingDeposit = _getTotalPooledEther();
-//        uint256 totalPooledEther = totalIncludingDeposit - _depositAmount;
-//
-//        // Adjust for rewards
-//        if (lastTotalPooledEther == 0){
-//            lastTotalPooledEther = totalIncludingDeposit;
-//        } else {
-//            uint256 newRewards = totalPooledEther - lastTotalPooledEther;
-//            uint256 rewardsFee = _getFee(newRewards, protocolFee);
-//            totalPooledEther -= rewardsFee;
-//            accumulatedRewards += rewardsFee;
-//        }
-//
-//        if (totalPooledEther == 0) {
-//            return _depositAmount;
-//        }
-//        return (_depositAmount * shares) / totalPooledEther;
-//    }
-
-    // todo revisit
-    function getRate() external view returns (uint256) {
-        // todo create a cadence mechanism to create epochs fand then within epochs liquidate rewards
-        uint256 totalShares = totalSupply;
-        if (totalShares == 0) {
-            return 1 ether;
+            (bool success, ) = protocolTreasury.call{value: rewardsFee}("");
+            if (!success) revert TransferFailed(protocolTreasury);
         }
-        return (1 ether * totalAssets()) / totalShares;
+        lastTotalPooledEther = totalPooledEtherWithDeposit;
+        shares = supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
     }
 
-//    function _getTotalPooledEther() internal view returns (uint256) {
-//        IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
-//        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
-//        return address(this).balance + sfrxETH_balance;
-//    }
+    function getRate() external view returns (uint256) {
+        uint256 supply = totalShares;
+        uint256 totalPooledEther = totalAssets();
+
+        // Adjust for rewards
+        if (lastTotalPooledEther != 0) {
+            uint256 newRewards = totalPooledEther - lastTotalPooledEther;
+            uint256 rewardsFee = _getFee(newRewards, protocolFee);
+            totalPooledEther -= rewardsFee;
+        }
+
+        uint256 amount = 1 ether;
+        return supply == 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
+    }
 
     /** YIELD STRATEGIES */
 
@@ -155,7 +146,12 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         protocolFee = _fee;
     }
 
-    function _getFee(uint256 _amountIn, uint256 _fee) internal returns (uint256 feeAmount) {
+    function setProtocolTreasury(address _treasury) external onlyOwner {
+        if (_treasury == address(0)) revert InvalidAddress();
+        protocolTreasury = _treasury;
+    }
+
+    function _getFee(uint256 _amountIn, uint256 _fee) internal view returns (uint256 feeAmount) {
         feeAmount = (_amountIn * _fee + PRECISION_SUB_ONE) / PRECISION;
     }
 
