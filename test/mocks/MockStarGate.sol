@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {IOFT, SendParam, MessagingFee, MessagingReceipt, OFTReceipt} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
-contract StarGateMock {
+contract MockStarGate {
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 

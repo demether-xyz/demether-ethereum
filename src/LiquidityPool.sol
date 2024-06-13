@@ -18,25 +18,29 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./interfaces/ILiquidityPool.sol";
+import "./interfaces/IfrxETHMinter.sol";
 
 /**
  * @title LiquidityPool
  * @dev Contracts holds ETH and determines the global rate
  */
+
+/*
+TODO
+ - Study using ERC4626 instead to abstract logic
+*/
 contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, ILiquidityPool {
-    error InvalidAmount();
-    error InvalidCaller();
-
-    event AddLiquidity(uint256 amount, uint256 shares, uint256 totalAmount, uint256 totalShares);
-
     /// @notice Contract able to manage the funds
     address private depositsManager;
 
     /// @notice Amount of total shares issued
     uint256 public shares;
 
+    /// @notice Address of the frax minter
+    address public fraxMinter;
+
     function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
-        require(_depositsManager != address(0), "_depositsManager address");
+        if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
 
         __Ownable_init(); // TODO determine upgrade policy and other auth processes
         __UUPSUpgradeable_init();
@@ -45,10 +49,12 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         transferOwnership(_owner);
     }
 
+    /** FUNDS MANAGEMENT */
+
     /// @notice Received ETH and mints shares to determine rate
     function addLiquidity() external payable {
         // TODO confirm we need it in ETH and not WETH depending on the strategies
-        if (msg.sender != depositsManager) revert InvalidCaller();
+        if (msg.sender != depositsManager) revert Unauthorized();
 
         uint256 amount = msg.value;
         uint256 share = _sharesForDepositAmount(amount);
@@ -58,7 +64,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
         emit AddLiquidity(amount, share, getTotalPooledEther(), shares);
 
-        // todo mint frax
+        // mint sfrxETH
+        _stakeETH();
+
         // send to EigenLayer strategies
     }
 
@@ -72,7 +80,6 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     function getRate() external view returns (uint256) {
         // todo create a cadence mechanism to create epochs and then within epochs liquidate rewards
-
         uint256 totalShares = shares;
         if (totalShares == 0) {
             return 1 ether;
@@ -83,6 +90,20 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     function getTotalPooledEther() public view returns (uint256) {
         return address(this).balance; // TODO upgrade later given system for staking, etc
     }
+
+    /** YIELD STRATEGIES */
+
+    function _stakeETH() internal {
+        if (fraxMinter == address(0)) revert StrategyNotSet();
+        IfrxETHMinter(fraxMinter).submitAndDeposit{value: address(this).balance}(address(this));
+    }
+
+    function setFraxMinter(address _fraxMinter) external onlyOwner {
+        if (_fraxMinter == address(0)) revert InvalidAddress();
+        fraxMinter = _fraxMinter;
+    }
+
+    /** OTHER */
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         require(_newImplementation.code.length > 0, "NOT_CONTRACT");

@@ -11,12 +11,11 @@
 - EigenLayer simplified
 
 ### COULD (next Epics/Sprints)
-- DEM voting system
 - EigenLayer with multiple operators, DEM selection / voting
 - Withdrawal flow
-- Per-chain bridge custom to minimize slippage
-- Canonical bridge for L2 specific
 - DUSD implementation / similarities abstraction
+- DEM voting system
+- Canonical bridge for L2 specific
 
 ## Sprints
 
@@ -34,28 +33,31 @@
 
 #### P3: Swap system into LST
 - Swap system to mint sfrxETH
-- Fees system: deposit, withdrawals, bridge, rewards
+- Fees: rewards fee system with epochs
+- Fees: deposit, withdrawals to cover bridging costs
+- Unit test when slippage creates unbalances
+
+#### P4: EigenLayer single operator
+- Module to restake into an operator
+
+#### P5: Generalization DUSD prep
+- Generalize code for DUSD solution
+
+#### P6: Withdrawals support
+- Withdrawals/Claims flow
+- Structure Messenger to also handle withdrawals
+
+#### PX Audit 1 on modules deposits, bridge, swap and simple EigenLayer
 - Beta system & mainnet beta deployment
 - Small Audit modules: deposits, bridge (consultant)
-
-#### P4: EigenLayer Single Operator Simple system
-- Module to restake into an operator
-- Generalize code for DUSD solution
-- Structure Messenger to also handle withdrawals
 - Audit prep
-  - [Audit Handbook](https://hackmd.io/sfWNlhdnSHu54bDY7p_S5Q) 
+  - [Audit Handbook](https://hackmd.io/sfWNlhdnSHu54bDY7p_S5Q)
   - [Readiness Checklist](https://github.com/nascentxyz/simple-security-toolkit/blob/main/audit-readiness-checklist.md)
-
-#### P5 Audit 1 on modules deposits, bridge, swap and simple EigenLayer
-
-#### P6 Withdrawals support
-- Withdrawals/Claims flow
 
 #### Later
 - Modular system for funds using canonical bridge
 - StarGate v2
 - Points system on deposits
 - Pause contract if rate is stale
-- Unit test when slippage creates unbalances
 - Study level of decentralization / plan
 - Discuss feature to accept OFT tokens / sfrxETH

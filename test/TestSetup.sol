@@ -11,7 +11,8 @@ import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
 import {LiquidityPool} from "../src/LiquidityPool.sol";
 import {Messenger} from "../src/Messenger.sol";
 import "./mocks/WETH.sol";
-import "./mocks/StarGateMock.sol";
+import "./mocks/MockStarGate.sol";
+import "./mocks/MockFrxETHMinter.sol";
 
 contract TestSetup is Test, TestHelper {
     uint8 public constant LAYERZERO = 1;
@@ -37,13 +38,15 @@ contract TestSetup is Test, TestHelper {
     WETH public wETHL1;
     WETH public wETHL2;
 
-    StarGateMock stargateL2;
+    MockStarGate public stargateL2;
+    MockFrxETHMinter public frxETHMinter;
 
     function _setUp_L1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
 
         wETHL1 = new WETH();
+        frxETHMinter = new MockFrxETHMinter();
 
         // deploy DepositsManagerL2.sol
         data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), owner, true);
@@ -57,6 +60,7 @@ contract TestSetup is Test, TestHelper {
         // deploy LiquidityPool
         data = abi.encodeWithSignature("initialize(address,address)", address(depositsManagerL1), owner);
         liquidityPool = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), admin, data)));
+        vm.label(address(liquidityPool), "liquidityPool");
 
         // deploy Messenger
         data = abi.encodeWithSignature("initialize(address,address,address)", address(wETHL1), address(depositsManagerL1), owner);
@@ -66,7 +70,7 @@ contract TestSetup is Test, TestHelper {
 
     function _setUp_L2() public {
         wETHL2 = new WETH();
-        stargateL2 = new StarGateMock();
+        stargateL2 = new MockStarGate();
 
         // deploy DepositsManagerL2.sol
         data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), owner, false);
@@ -90,6 +94,7 @@ contract TestSetup is Test, TestHelper {
         depositsManagerL1.setToken(address(l1token));
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
+        liquidityPool.setFraxMinter(address(frxETHMinter));
 
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);

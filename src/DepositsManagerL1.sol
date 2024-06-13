@@ -62,7 +62,7 @@ contract DepositsManagerL1 is
     bool private nativeSupport;
 
     function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
-        require(_wETH != address(0), "Invalid wETH");
+        if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
 
         __Ownable_init(); // TODO determine upgrade policy and other auth processes
         __Pausable_init();
@@ -135,12 +135,12 @@ contract DepositsManagerL1 is
     receive() external payable {}
 
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
         token = IDOFT(_token);
     }
 
     function setLiquidityPool(address _pool) external onlyOwner {
-        require(_pool != address(0), "Invalid pool");
+        if (_pool == address(0)) revert InvalidAddress();
         pool = ILiquidityPool(_pool);
     }
 
