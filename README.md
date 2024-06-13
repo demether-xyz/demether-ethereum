@@ -35,6 +35,10 @@ The LiquidityPool contract manages ETH deposits, mints shares for added liquidit
 - **Add Liquidity**: Allows the addition of liquidity by minting shares based on received ETH.
 - **Rate Determination**: Provides a function to get the current rate of the pool based on total pooled ETH and total shares.
 
+#### sfrxETH Strategy
+
+- **Staking Strategy**: Implements a staking strategy to mint sfrxETH tokens.
+
 ### Messenger.sol
 
 The Messenger module handles the transfer of ETH and messages cross-chain. It implements LayerZero and StarGate as standard methods while allowing for specific canonical implementation or expansion of other services.
