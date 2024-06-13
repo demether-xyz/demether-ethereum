@@ -25,3 +25,6 @@
 [submodule "lib/frxETH-public"]
 	path = lib/frxETH-public
 	url = https://github.com/FraxFinance/frxETH-public
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/Rari-Capital/solmate
