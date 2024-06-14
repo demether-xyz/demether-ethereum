@@ -25,3 +25,6 @@
 [submodule "lib/frxETH-public"]
 	path = lib/frxETH-public
 	url = https://github.com/FraxFinance/frxETH-public
+[submodule "lib/eigenlayer-contracts"]
+	path = lib/eigenlayer-contracts
+	url = https://github.com/Layr-Labs/eigenlayer-contracts
