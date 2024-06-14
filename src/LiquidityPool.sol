@@ -16,11 +16,14 @@ pragma solidity ^0.8.26;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import "@frxETH/IsfrxETH.sol";
 
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IfrxETHMinter.sol";
+import {IStrategyManager, IStrategy} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
+
 import "forge-std/console.sol"; // todo remove
 /**
  * @title LiquidityPool
@@ -39,9 +42,6 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /// @notice Amount of total shares issued
     uint256 public totalShares;
 
-    /// @notice Address of the frax minter
-    address public fraxMinter;
-
     /// @notice Protocol fee destination
     address public protocolTreasury;
 
@@ -53,6 +53,15 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /// @notice Tracks the last total pooled ether
     uint256 private lastTotalPooledEther;
+
+    /// @notice Address of the frax minter
+    address public fraxMinter;
+
+    /// @notice Address of the EigenLayer strategy manager
+    address public eigenLayerStrategyManager;
+
+    /// @notice Address of the EigenLayer strategy
+    address public eigenLayerStrategy;
 
     function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
@@ -93,10 +102,10 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
         // mint sfrxETH
         if (address(this).balance > 0) {
-            _stakeETH();
+            _mintSfrxETH();
 
             // send to EigenLayer strategies
-            // increase the rate on sfrx and then
+            //_eigenLayerRestake();
         }
     }
 
@@ -142,25 +151,52 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /** YIELD STRATEGIES */
 
-    function _stakeETH() internal {
+    function _mintSfrxETH() internal {
         if (fraxMinter == address(0)) revert StrategyNotSet();
+
         IfrxETHMinter(fraxMinter).submitAndDeposit{value: address(this).balance}(address(this));
     }
 
     function setFraxMinter(address _fraxMinter) external onlyOwner {
         if (_fraxMinter == address(0)) revert InvalidAddress();
+
         fraxMinter = _fraxMinter;
+    }
+
+    /** RESTAKING **/
+
+    function _eigenLayerRestake() internal {
+        if (eigenLayerStrategyManager == address(0)) revert StrategyNotSet();
+
+        IERC20 sfrxETH = IERC20(IfrxETHMinter(fraxMinter).sfrxETHToken());
+        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
+        if (!sfrxETH.approve(eigenLayerStrategyManager, sfrxETH_balance)) revert ApprovalFailed();
+
+        uint256 shares = IStrategyManager(eigenLayerStrategyManager).depositIntoStrategy(
+            IStrategy(eigenLayerStrategy),
+            sfrxETH,
+            sfrxETH_balance
+        );
+        if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
+    }
+
+    function setEigenLayer(address _strategyManager, address _strategy) external onlyOwner {
+        if (_strategyManager == address(0) || _strategy == address(0)) revert InvalidAddress();
+        eigenLayerStrategyManager = _strategyManager;
+        eigenLayerStrategy = _strategy;
     }
 
     /** OTHER */
 
     function setProtocolFee(uint256 _fee) external onlyOwner {
         if (_fee > 3e16) revert InvalidFee();
+
         protocolFee = _fee;
     }
 
     function setProtocolTreasury(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidAddress();
+
         protocolTreasury = _treasury;
     }
 
