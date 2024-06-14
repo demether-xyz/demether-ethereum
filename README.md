@@ -50,3 +50,11 @@ The Messenger module handles the transfer of ETH and messages cross-chain. It im
 The liquid token rates originate from the L1 chain and are propagated to the L2 chains. The rate is used to determine the amount of liquid tokens to mint when a user deposits ETH. To avoid staleness of the rate on any L2, if the rate has not been updated after a given time, the contract will not allow further deposits or withdrawals until a new rate is synced.
 
 To update the rate, call `syncRate()` on `DepositsManagerL1.sol`, providing the `chainId` and the appropriate gas fees.
+
+### Sync Tokens from L2 Chains to L1
+
+The syncTokens() function on DepositsManagerL2.sol allows users to sync tokens from L2 to L1. This function requires paying gas fees, which can be quoted by calling quoteLayerZero() on Messenger.sol.
+
+### Add Liquidity and Mint sfrxETH
+
+Deposits from both L1 and L2 remain in the DepositsManager contract. A public call to addLiquidity() initiates the process of moving the funds to the pool, minting sfrxETH, and staking into EigenLayer.
