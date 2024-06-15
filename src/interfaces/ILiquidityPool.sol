@@ -4,7 +4,6 @@ pragma solidity ^0.8.26;
 interface ILiquidityPool {
     error InvalidAmount();
     error InvalidAddress();
-    error StrategyNotSet();
     error Unauthorized();
     error InvalidFee();
     error TransferFailed(address);

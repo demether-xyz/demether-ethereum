@@ -3,7 +3,11 @@
 ## Phase 1: DETH
 
 ### MUST:
+- Multi-sig for institutional deposits + EG points
+  - Transfer existing positions in EG
 - Deposits of ETH on L1 and L2s
+  - Whitelist system
+  - Referral system to get into whitelist
 
 ### SHOULD:
 - Messaging and standard bridge system
@@ -43,9 +47,11 @@
 - Generalize code for DUSD solution
 - Fees: deposit, withdrawals to cover bridging costs
 
-#### P6: Withdrawals support
-- Withdrawals/Claims flow
-- Structure Messenger to also handle withdrawals
+#### P6: Deposits requirements
+- Whitelist integration / referrals 
+- Deposit and mint immediately, without processing / gas based
+- Limits on batches sending
+- Chains disabling bridging / simpler settings
 
 #### PX Audit 1 on modules deposits, bridge, swap and simple EigenLayer
 - Beta system & mainnet beta deployment
@@ -53,6 +59,10 @@
 - Audit prep
   - [Audit Handbook](https://hackmd.io/sfWNlhdnSHu54bDY7p_S5Q)
   - [Readiness Checklist](https://github.com/nascentxyz/simple-security-toolkit/blob/main/audit-readiness-checklist.md)
+
+#### PX: Withdrawals support
+- Withdrawals/Claims flow
+- Structure Messenger to also handle withdrawals
 
 #### Later
 - Modular system for funds using canonical bridge

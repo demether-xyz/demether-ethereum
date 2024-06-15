@@ -5,7 +5,6 @@ import "./TestSetup.sol";
 
 contract NativeMintingL1 is TestSetup {
     function test_L1_minting_rate() public {
-        // todo revisit
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
     }

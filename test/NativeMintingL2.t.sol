@@ -6,7 +6,6 @@ import "./TestSetup.sol";
 contract NativeMintingL2 is TestSetup {
     function test_L2_minting_rate() public {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
-        // todo set fee and revisit
         assertEq(amountOut, 99.9 ether);
     }
 

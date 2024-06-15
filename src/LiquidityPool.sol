@@ -105,7 +105,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
             _mintSfrxETH();
 
             // send to EigenLayer strategies
-            //_eigenLayerRestake();
+            _eigenLayerRestake();
         }
     }
 
@@ -152,7 +152,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /** YIELD STRATEGIES */
 
     function _mintSfrxETH() internal {
-        if (fraxMinter == address(0)) revert StrategyNotSet();
+        if (fraxMinter == address(0)) return;
 
         IfrxETHMinter(fraxMinter).submitAndDeposit{value: address(this).balance}(address(this));
     }
@@ -166,7 +166,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /** RESTAKING **/
 
     function _eigenLayerRestake() internal {
-        if (eigenLayerStrategyManager == address(0)) revert StrategyNotSet();
+        if (eigenLayerStrategyManager == address(0)) return;
 
         IERC20 sfrxETH = IERC20(IfrxETHMinter(fraxMinter).sfrxETHToken());
         uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
