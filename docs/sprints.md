@@ -41,11 +41,13 @@
 - Unit test when slippage creates unbalances - OK
 
 #### P4: EigenLayer single operator
-- Module to restake into an operator
+- EigenLayer deposit into StrategyManager - OK
+- EigenLayer restake into an operator
 
 #### P5: Generalization DUSD prep
 - Generalize code for DUSD solution
 - Fees: deposit, withdrawals to cover bridging costs
+- Increase rates at different starting points for sfrxETH, pool to improve tests
 
 #### P6: Deposits requirements
 - Whitelist integration / referrals 
@@ -54,6 +56,7 @@
 - Chains disabling bridging / simpler settings
 
 #### PX Audit 1 on modules deposits, bridge, swap and simple EigenLayer
+- Verify items in `Later` that need addressing and `TODO`
 - Beta system & mainnet beta deployment
 - Small Audit modules: deposits, bridge (consultant)
 - Audit prep
@@ -65,6 +68,7 @@
 - Structure Messenger to also handle withdrawals
 
 #### Later
+- frxETh how to convert into ETH / account for price changes
 - Modular system for funds using canonical bridge
 - StarGate v2
 - Points system on deposits

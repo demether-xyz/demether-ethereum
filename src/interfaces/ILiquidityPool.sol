@@ -9,8 +9,12 @@ interface ILiquidityPool {
     error TransferFailed(address);
     error StrategyFailed(address);
     error ApprovalFailed();
+    error LSTMintingNotSet();
+    error InvalidEigenLayerStrategy();
+
     event AddLiquidity(uint256 amount, uint256 shares, uint256 totalAssets, uint256 totalShares);
     event RewardsProtocol(uint256 amount);
+
     function addLiquidity() external payable;
     function getRate() external view returns (uint256);
 }

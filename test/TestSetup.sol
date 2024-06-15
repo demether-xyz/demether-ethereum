@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 
+import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy} from "./TestSetupEigenLayer.sol";
 import "@foundry-upgrades/ProxyTester.sol";
 import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {frxETH} from "@frxETH/frxETH.sol";
@@ -18,7 +19,7 @@ import {Messenger} from "../src/Messenger.sol";
 import "./mocks/WETH.sol";
 import "./mocks/MockStarGate.sol";
 
-contract TestSetup is Test, TestHelper {
+contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
     uint8 public constant STARGATE_v2 = 3;
@@ -167,7 +168,33 @@ contract TestSetup is Test, TestHelper {
         vm.stopPrank();
     }
 
-    function setUp() public virtual override {
+    function _setUp_EigenLayer() public {
+        TestSetupEigenLayer.setUp();
+
+        // deploy sfrxETH strategy
+        StrategyBase sfrxETHStrategy = StrategyBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerPauserReg)
+                )
+            )
+        );
+
+        // whitelist strategy
+        IStrategy[] memory _strategy = new IStrategy[](1);
+        bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
+        _strategy[0] = sfrxETHStrategy;
+        vm.prank(strategyManager.strategyWhitelister());
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+
+        // set-up EigenLayer
+        vm.prank(owner);
+        liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy));
+    }
+
+    function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {
         admin = vm.addr(uint256(0x123));
         vm.label(admin, "Admin");
 
@@ -178,6 +205,7 @@ contract TestSetup is Test, TestHelper {
         _setUp_L2();
         _settings();
         _sync_rate();
+        _setUp_EigenLayer();
     }
 
     /// @dev LayerZero syncing

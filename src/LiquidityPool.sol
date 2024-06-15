@@ -39,6 +39,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /// @notice Contract able to manage the funds
     address private depositsManager;
 
+    /// @notice Instance of the sfrxETH token
+    IsfrxETH public sfrxETH;
+
     /// @notice Amount of total shares issued
     uint256 public totalShares;
 
@@ -110,9 +113,23 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function totalAssets() public view virtual returns (uint256) {
-        IsfrxETH sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
-        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
-        return address(this).balance + sfrxETH_balance - protocolAccruedFees;
+        uint256 sfrxETH_balance = 0;
+        uint256 eigenLayerBalance = 0;
+
+        if (address(sfrxETH) != address(0)) {
+            sfrxETH_balance = sfrxETH.balanceOf(address(this));
+        }
+
+        // EigenLayer restaked sfrxETH
+        if (eigenLayerStrategyManager != address(0)) {
+            IStrategy strategy = IStrategy(eigenLayerStrategy);
+            sfrxETH_balance += strategy.userUnderlyingView(address(this));
+        }
+
+        // TODO this gives frxETH, but must be converted to ETH
+        uint sfrxETH_value = sfrxETH.previewWithdraw(sfrxETH_balance);
+
+        return address(this).balance + sfrxETH_value - protocolAccruedFees;
     }
 
     function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
@@ -121,7 +138,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         uint256 totalPooledEther = totalPooledEtherWithDeposit - _deposit;
 
         // Adjust for rewards
-        if (lastTotalPooledEther != 0) {
+        if (lastTotalPooledEther != 0 && totalPooledEther > lastTotalPooledEther) {
             uint256 newRewards = totalPooledEther - lastTotalPooledEther;
             uint256 rewardsFee = _getFee(newRewards, protocolFee);
             emit RewardsProtocol(rewardsFee);
@@ -139,7 +156,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         uint256 totalPooledEther = totalAssets();
 
         // Adjust for rewards
-        if (lastTotalPooledEther != 0) {
+        if (lastTotalPooledEther != 0 && totalPooledEther > lastTotalPooledEther) {
             uint256 newRewards = totalPooledEther - lastTotalPooledEther;
             uint256 rewardsFee = _getFee(newRewards, protocolFee);
             totalPooledEther -= rewardsFee;
@@ -151,6 +168,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /** YIELD STRATEGIES */
 
+    // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _mintSfrxETH() internal {
         if (fraxMinter == address(0)) return;
 
@@ -161,20 +179,21 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         if (_fraxMinter == address(0)) revert InvalidAddress();
 
         fraxMinter = _fraxMinter;
+        sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
     }
 
     /** RESTAKING **/
 
+    // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _eigenLayerRestake() internal {
-        if (eigenLayerStrategyManager == address(0)) return;
+        if (eigenLayerStrategyManager == address(0) || fraxMinter == address(0)) return;
 
-        IERC20 sfrxETH = IERC20(IfrxETHMinter(fraxMinter).sfrxETHToken());
         uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
         if (!sfrxETH.approve(eigenLayerStrategyManager, sfrxETH_balance)) revert ApprovalFailed();
 
         uint256 shares = IStrategyManager(eigenLayerStrategyManager).depositIntoStrategy(
             IStrategy(eigenLayerStrategy),
-            sfrxETH,
+            IERC20(address(sfrxETH)),
             sfrxETH_balance
         );
         if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
@@ -182,6 +201,10 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     function setEigenLayer(address _strategyManager, address _strategy) external onlyOwner {
         if (_strategyManager == address(0) || _strategy == address(0)) revert InvalidAddress();
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
+
+        if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();
+
         eigenLayerStrategyManager = _strategyManager;
         eigenLayerStrategy = _strategy;
     }
