@@ -40,9 +40,11 @@
 - Fees: rewards fee system - OK
 - Unit test when slippage creates unbalances - OK
 
-#### P4: EigenLayer single operator
+#### P4: Restaking Module
 - EigenLayer deposit into StrategyManager - OK
-- EigenLayer restake into an operator
+- EigenLayer delegate into a single operator
+- Symbiotic deposit
+- System to determine which with permissions
 
 #### P5: Generalization DUSD prep
 - Generalize code for DUSD solution
@@ -75,3 +77,4 @@
 - Pause contract if rate is stale
 - Study level of decentralization / plan
 - Discuss feature to accept OFT tokens / sfrxETH
+- EigenLayer system of contracts to delegate into several operators

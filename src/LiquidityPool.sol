@@ -18,11 +18,12 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
-import "@frxETH/IsfrxETH.sol";
 
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IfrxETHMinter.sol";
-import {IStrategyManager, IStrategy} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
+import "@frxETH/IsfrxETH.sol";
+
+import {IStrategyManager, IStrategy, IDelegationManager} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
 
 import "forge-std/console.sol"; // todo remove
 /**
@@ -65,6 +66,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /// @notice Address of the EigenLayer strategy
     address public eigenLayerStrategy;
+
+    /// @notice Address of the EigenLayer delegation manager
+    address public eigenLayerDelegationManager;
 
     function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
@@ -199,14 +203,20 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
     }
 
-    function setEigenLayer(address _strategyManager, address _strategy) external onlyOwner {
-        if (_strategyManager == address(0) || _strategy == address(0)) revert InvalidAddress();
+    function delegateEigenLayer(address _operator) external onlyOwner {
+        if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
+        IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
+    }
+
+    function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
+        if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0)) revert InvalidAddress();
         if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
         if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();
 
         eigenLayerStrategyManager = _strategyManager;
         eigenLayerStrategy = _strategy;
+        eigenLayerDelegationManager = _delegationManager;
     }
 
     /** OTHER */
