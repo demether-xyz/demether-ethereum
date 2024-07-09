@@ -64,7 +64,7 @@ contract DepositsManagerL1 is
     function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
 
-        __Ownable_init(); // TODO determine upgrade policy and other auth processes
+        __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();

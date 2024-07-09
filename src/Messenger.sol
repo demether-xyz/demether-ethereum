@@ -68,7 +68,7 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
     function initialize(address _wETH, address _depositsManager, address _owner) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
 
-        __Ownable_init(); // TODO determine upgrade policy and other auth processes
+        __Ownable_init();
         __UUPSUpgradeable_init();
 
         wETH = IWETH9(_wETH);

@@ -22,7 +22,6 @@
 - Canonical bridge for L2 specific
 
 ## Backlog
-- Determine upgrade policy and other auth processes
 - Whitelist integration / referrals
 - Determine fees settings system
 - Fees: deposit, withdrawals to cover bridging costs

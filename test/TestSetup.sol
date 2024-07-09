@@ -75,7 +75,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         // set-up WETH
         wETHL1 = new WETH();
 
-        // deploy DepositsManagerL2.sol
+        // deploy DepositsManagerL1.sol
         data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), owner, true);
         depositsManagerL1 = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), admin, data)));
         vm.label(address(depositsManagerL1), "depositsManagerL1");
