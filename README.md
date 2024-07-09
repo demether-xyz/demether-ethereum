@@ -2,6 +2,14 @@
 
 Demether is a cutting-edge multichain protocol designed to maximize yield across different blockchain networks. By leveraging a sophisticated blend of restaking, stablecoins, and other financial derivatives, Demether ensures efficient and secure high-yield opportunities for its users.
 
+## Features
+
+- **Cross-Chain Deposits**: Users can deposit ETH on both Layer 1 and Layer 2 blockchains.
+- **StarGate Bridge**: ETH is transferred between Layer 1 and Layer 2 using the StarGate v1.
+- **Yield Generation**: Deposits are allocated into sfrxETH and into EigenLayer LST deposits by a public call
+- **EigenLayer Operator**: Single operator for the EigenLayer staking strategy supported.
+- **Rate Syncing**: Rates are synced between Layer 1 and Layer 2 chains by public call.
+
 ## Architecture
 
 ### DOFT.sol

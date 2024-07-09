@@ -24,6 +24,7 @@ import "./interfaces/IfrxETHMinter.sol";
 import "@frxETH/IsfrxETH.sol";
 
 import {IStrategyManager, IStrategy, IDelegationManager} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
+import {ISignatureUtils} from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
 
 import "forge-std/console.sol"; // todo remove
 /**
@@ -205,6 +206,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     function delegateEigenLayer(address _operator) external onlyOwner {
         if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
+        if (_operator == address(0)) revert InvalidAddress();
         IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
 

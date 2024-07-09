@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy} from "./TestSetupEigenLayer.sol";
+import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy, IDelegationManager} from "./TestSetupEigenLayer.sol";
 import "@foundry-upgrades/ProxyTester.sol";
 import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {frxETH} from "@frxETH/frxETH.sol";
@@ -189,9 +189,20 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.prank(strategyManager.strategyWhitelister());
         strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
+        // register operator
+        vm.startPrank(operator);
+        IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
+            __deprecated_earningsReceiver: address(0),
+            delegationApprover: address(0),
+            stakerOptOutWindowBlocks: 0
+        });
+        string memory emptyStringForMetadataURI;
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        vm.stopPrank();
+
         // set-up EigenLayer
         vm.prank(owner);
-        liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy));
+        liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
     }
 
     function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {
