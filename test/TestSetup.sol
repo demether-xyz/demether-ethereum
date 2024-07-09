@@ -53,7 +53,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // Deploy frxETH, sfrxETH
         frxETH frxETHtoken = new frxETH(admin, admin);
-        sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1000);
+        sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1);
         frxETHMinterContract = new frxETHMinter(
             0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b,
             address(frxETHtoken),
@@ -65,6 +65,14 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.prank(admin);
         frxETHtoken.addMinter(address(frxETHMinterContract));
 
+        // increase sfrxETHtoken rate to 2.0
+        frxETHMinterContract.submitAndDeposit{value: 1 ether}(address(this));
+        frxETHMinterContract.submitAndGive{value: 1 ether}(address(sfrxETHtoken));
+        vm.warp(block.timestamp + 1);
+        sfrxETHtoken.syncRewards();
+        vm.warp(block.timestamp + 1);
+
+        // set-up WETH
         wETHL1 = new WETH();
 
         // deploy DepositsManagerL2.sol

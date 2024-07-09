@@ -22,7 +22,6 @@
 - Canonical bridge for L2 specific
 
 ## Backlog
-- Increase rates at different starting points for sfrxETH, pool to improve tests
 - Determine upgrade policy and other auth processes
 - Whitelist integration / referrals
 - Determine fees settings system

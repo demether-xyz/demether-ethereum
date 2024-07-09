@@ -132,9 +132,9 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         }
 
         // TODO this gives frxETH, but must be converted to ETH
-        uint sfrxETH_value = sfrxETH.previewWithdraw(sfrxETH_balance);
+        uint frxETH_balance = sfrxETH.convertToAssets(sfrxETH_balance);
 
-        return address(this).balance + sfrxETH_value - protocolAccruedFees;
+        return address(this).balance + frxETH_balance - protocolAccruedFees;
     }
 
     function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
