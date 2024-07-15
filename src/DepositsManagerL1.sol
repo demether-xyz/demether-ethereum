@@ -94,11 +94,8 @@ contract DepositsManagerL1 is
     }
 
     function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
-        uint256 depositFee = 0; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 rate = getRate();
-        uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
-        uint256 amountInAfterFee = _amountIn - feeAmount;
-        amountOut = (amountInAfterFee * PRECISION) / rate;
+        amountOut = (_amountIn * PRECISION) / rate;
         return amountOut;
     }
 
