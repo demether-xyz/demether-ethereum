@@ -13,7 +13,7 @@ contract NativeMintingL1 is TestSetup {
         uint256 amount = 100 ether;
         wETHL1.deposit{value: amount}();
         wETHL1.approve(address(depositsManagerL1), amount);
-        depositsManagerL1.deposit(amount);
+        depositsManagerL1.deposit(amount, address(0));
         assertEq(wETHL1.balanceOf(address(this)), 0);
         assertEq(l1token.balanceOf(address(this)), 100 ether);
     }
@@ -21,14 +21,14 @@ contract NativeMintingL1 is TestSetup {
     function test_L1_deposit_eth() public {
         uint256 amount = 100 ether;
         uint256 balanceBefore = address(this).balance;
-        depositsManagerL1.depositETH{value: amount}();
+        depositsManagerL1.depositETH{value: amount}(address(0));
         assertEq(address(this).balance, balanceBefore - amount);
         assertEq(l1token.balanceOf(address(this)), 100 ether);
     }
 
     function test_L1_add_liquidity() public {
         assertEq(depositsManagerL1.getRate(), 1 ether);
-        depositsManagerL1.depositETH{value: 100 ether}();
+        depositsManagerL1.depositETH{value: 100 ether}(address(0));
         depositsManagerL1.addLiquidity();
 
         // create rewards in the pool
@@ -38,7 +38,7 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
 
         // add liquidity
-        depositsManagerL1.depositETH{value: 109 ether}();
+        depositsManagerL1.depositETH{value: 109 ether}(address(0));
         depositsManagerL1.addLiquidity();
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
         assertEq(liquidityPool.totalAssets(), 218 ether);
@@ -46,7 +46,7 @@ contract NativeMintingL1 is TestSetup {
     }
 
     function test_L1_sync_rate() public {
-        depositsManagerL1.depositETH{value: 100 ether}();
+        depositsManagerL1.depositETH{value: 100 ether}(address(0));
         depositsManagerL1.addLiquidity();
 
         assertEq(depositsManagerL1.getRate(), 1 ether);

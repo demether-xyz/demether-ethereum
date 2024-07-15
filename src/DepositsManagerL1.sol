@@ -75,21 +75,21 @@ contract DepositsManagerL1 is
         transferOwnership(_owner);
     }
 
-    function deposit(uint256 _amountIn) external whenNotPaused nonReentrant returns (uint256 amountOut) {
+    function deposit(uint256 _amountIn, address _referral) external whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
-        amountOut = _deposit(_amountIn);
+        amountOut = _deposit(_amountIn, _referral);
     }
 
-    function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
+    function depositETH(address _referral) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
         wETH.deposit{value: address(this).balance}();
-        amountOut = _deposit(msg.value);
+        amountOut = _deposit(msg.value, _referral);
     }
 
-    function _deposit(uint256 _amountIn) internal returns (uint256 amountOut) {
+    function _deposit(uint256 _amountIn, address _referral) internal returns (uint256 amountOut) {
         require(_amountIn != 0, "Amount in zero");
         amountOut = getConversionAmount(_amountIn);
-        emit Deposit(msg.sender, _amountIn, amountOut);
+        emit Deposit(msg.sender, _amountIn, amountOut, _referral);
         require(token.mint(msg.sender, amountOut), "Token minting failed");
     }
 
