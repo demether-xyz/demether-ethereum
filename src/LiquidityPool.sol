@@ -14,15 +14,15 @@ pragma solidity ^0.8.26;
 // Juan C. Dorado: https://github.com/jdorado/
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IfrxETHMinter.sol";
-import "@frxETH/IsfrxETH.sol";
+import "./OwnableAccessControl.sol";
 
+import "@frxETH/IsfrxETH.sol";
 import {IStrategyManager, IStrategy, IDelegationManager} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
 import {ISignatureUtils} from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
 
@@ -32,7 +32,7 @@ import "forge-std/console.sol"; // todo remove
  * @dev Contracts holds ETH and determines the global rate
  */
 
-contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, ILiquidityPool {
+contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, ILiquidityPool {
     using FixedPointMathLib for uint256;
 
     uint256 internal constant PRECISION = 1e18;
@@ -71,13 +71,14 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     /// @notice Address of the EigenLayer delegation manager
     address public eigenLayerDelegationManager;
 
-    function initialize(address _depositsManager, address _owner) external initializer onlyProxy {
+    function initialize(address _depositsManager, address _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
 
         __Ownable_init();
         __UUPSUpgradeable_init();
 
         depositsManager = _depositsManager;
+        setService(_service);
         transferOwnership(_owner);
 
         // initial fee setting
@@ -204,7 +205,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
     }
 
-    function delegateEigenLayer(address _operator) external onlyOwner {
+    function delegateEigenLayer(address _operator) external onlyService {
         if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
         IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
@@ -223,7 +224,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     /** OTHER */
 
-    function setProtocolFee(uint256 _fee) external onlyOwner {
+    function setProtocolFee(uint256 _fee) external onlyService {
         if (_fee > 3e16) revert InvalidFee();
 
         protocolFee = _fee;

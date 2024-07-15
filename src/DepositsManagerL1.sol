@@ -13,7 +13,6 @@ pragma solidity ^0.8.26;
 // Juan C. Dorado: https://github.com/jdorado/
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -23,6 +22,7 @@ import "./interfaces/IWETH9.sol";
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IDepositsManager.sol";
+import "./OwnableAccessControl.sol";
 
 /**
  * @title L1 Deposits Manager
@@ -36,7 +36,7 @@ TODO
 */
 contract DepositsManagerL1 is
     Initializable,
-    OwnableUpgradeable,
+    OwnableAccessControl,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable,
@@ -61,7 +61,7 @@ contract DepositsManagerL1 is
     /// @notice Chain native token is ETH
     bool private nativeSupport;
 
-    function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
+    function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
 
         __Ownable_init();
@@ -72,6 +72,7 @@ contract DepositsManagerL1 is
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
 
+        setService(_service);
         transferOwnership(_owner);
     }
 
@@ -125,8 +126,9 @@ contract DepositsManagerL1 is
         if (msg.value < totalFees) revert InsufficientFee();
     }
 
+    /// @dev Function to be used when withdrawals are enabled
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
-        //        if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
+        //if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         revert("not implemented");
     }
 
@@ -149,11 +151,11 @@ contract DepositsManagerL1 is
         messenger = IMessenger(_messenger);
     }
 
-    function pause() external onlyOwner whenNotPaused {
+    function pause() external onlyService whenNotPaused {
         _pause();
     }
 
-    function unpause() external onlyOwner whenPaused {
+    function unpause() external onlyService whenPaused {
         _unpause();
     }
 

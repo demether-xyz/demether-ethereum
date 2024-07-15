@@ -14,7 +14,6 @@ pragma solidity ^0.8.26;
 // Juan C. Dorado: https://github.com/jdorado/
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ILayerZeroEndpointV2, MessagingFee, MessagingParams, Origin} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
@@ -22,6 +21,7 @@ import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IDepositsManager.sol";
+import "./OwnableAccessControl.sol";
 import "forge-std/console.sol"; // todo remove
 /**
  * @title Messenger
@@ -38,7 +38,7 @@ interface IStargateRouterETH {
     ) external payable;
 }
 
-contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMessenger {
+contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMessenger {
     using OptionsBuilder for bytes;
 
     uint256 internal constant PRECISION = 1e18;
@@ -65,7 +65,7 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
     /// @notice Mapping for each destination chainId tokens settings
     mapping(uint32 => Settings) public settings_tokens;
 
-    function initialize(address _wETH, address _depositsManager, address _owner) external initializer onlyProxy {
+    function initialize(address _wETH, address _depositsManager, address _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
 
         __Ownable_init();
@@ -76,6 +76,7 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
 
         depositsManager = _depositsManager;
 
+        setService(_service);
         transferOwnership(_owner);
     }
 
@@ -112,13 +113,13 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
         }
     }
 
-    function setSettingsMessages(uint32 _destination, Settings calldata _settings) external onlyOwner {
+    function setSettingsMessages(uint32 _destination, Settings calldata _settings) external onlyService {
         settings_messages[_destination] = _settings;
         settings_messages_bridges[_settings.bridgeId][_settings.bridgeChainId] = _settings;
         emit SettingsMessages(_destination, _settings.bridgeId, _settings.toAddress);
     }
 
-    function setSettingsTokens(uint32 _destination, Settings calldata _settings) external onlyOwner {
+    function setSettingsTokens(uint32 _destination, Settings calldata _settings) external onlyService {
         settings_tokens[_destination] = _settings;
         emit SettingsTokens(_destination, _settings.bridgeId, _settings.toAddress);
     }
