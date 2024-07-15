@@ -10,3 +10,5 @@ solidity-bytes-utils/contracts=lib/solidity-bytes-utils/contracts
 @foundry-upgrades=lib/foundry-upgrades/src
 @frxETH=lib/frxETH-public/src
 @eigenlayer=lib/eigenlayer-contracts/src
+solmate/utils=lib/solmate/src/utils
+solmate/mixins=lib/frxETH-public/lib/solmate/src/mixins

@@ -101,3 +101,69 @@ contract NativeMintingL2 is TestSetup {
         assertEq(missingETH, 8.891 ether);
     }
 }
+
+contract SetTokenL2Test is TestSetup {
+    function test_RevertWhenSetTokenCallerIsNotOwner() external {
+        vm.startPrank(bob);
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        depositsManagerL2.setToken(address(bob));
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenPassedZeroAddress() external {
+        vm.startPrank(owner);
+        vm.expectRevert(InvalidAddress.selector);
+        depositsManagerL2.setToken(address(0));
+        vm.stopPrank();
+    }
+}
+
+contract SetMessengerL2Test is TestSetup {
+    function test_RevertWhenSetMessengerCallerIsNotOwner() external {
+        vm.startPrank(bob);
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        depositsManagerL2.setMessenger(address(bob));
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenPassedZeroAddress() external {
+        vm.startPrank(owner);
+        vm.expectRevert(InvalidAddress.selector);
+        depositsManagerL2.setMessenger(address(0));
+        vm.stopPrank();
+    }
+}
+
+contract PauseL2Test is TestSetup {
+    function test_RevertWhenPauseCallerIsNotOwner() external {
+        vm.startPrank(bob);
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        depositsManagerL2.pause();
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenAlreadyPaused() external {
+        vm.startPrank(owner);
+        depositsManagerL2.pause();
+
+        vm.expectRevert(bytes("Pausable: paused"));
+        depositsManagerL2.pause();
+        vm.stopPrank();
+    }
+}
+
+contract UnpauseL2Test is TestSetup {
+    function test_RevertWhenUnpauseCallerIsNotOwner() external {
+        vm.startPrank(bob);
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        depositsManagerL2.unpause();
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenNotPaused() external {
+        vm.startPrank(owner);
+        vm.expectRevert(bytes("Pausable: not paused"));
+        depositsManagerL2.unpause();
+        vm.stopPrank();
+    }
+}

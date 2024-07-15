@@ -205,8 +205,8 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function delegateEigenLayer(address _operator) external onlyOwner {
-        if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
+        if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
         IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
 

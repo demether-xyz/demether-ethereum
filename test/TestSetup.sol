@@ -26,6 +26,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
     address internal admin;
     address internal owner;
+    address public bob = makeAddr("bob");
+
     ProxyTester internal proxy = new ProxyTester();
     bytes internal data;
 
@@ -47,6 +49,11 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
 
+    error InvalidAddress();
+    error Unauthorized();
+    error InvalidFee();
+    error InvalidParametersLength();
+    
     function _setUp_L1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);

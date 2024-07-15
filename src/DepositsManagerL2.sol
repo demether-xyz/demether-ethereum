@@ -131,7 +131,7 @@ contract DepositsManagerL2 is
     /** OTHER **/
 
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
         token = IDOFT(_token);
     }
 
