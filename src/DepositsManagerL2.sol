@@ -114,6 +114,12 @@ contract DepositsManagerL2 is
         messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, amount, msg.sender);
     }
 
+    /// @notice Sync tokens specifying amount to transfer to limit slippage
+    function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
+        if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
+        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, _amount, msg.sender);
+    }
+
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
