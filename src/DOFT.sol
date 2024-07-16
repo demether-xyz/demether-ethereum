@@ -15,7 +15,7 @@ pragma solidity 0.8.26;
 
 import { OFTUpgradeable } from "@fraxfinance/OFTUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
+import { ERC1967Upgrade } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 /*
 TODO
     Make Upgradable using pattern https://blastscan.io/address/0x20ee00f43ef299dba82ba6fef537756dabe38cc7#code
@@ -39,7 +39,7 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
      */
     function initialize(string memory name, string memory symbol, address owner) external virtual initializer {
         __OFT_init(name, symbol, owner);
-        __Ownable_init(owner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
     }
 
@@ -56,6 +56,6 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function getImplementation() external view returns (address) {
-        return ERC1967Utils._getImplementation();
+        return _getImplementation();
     }
 }
