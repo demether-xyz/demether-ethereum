@@ -20,7 +20,7 @@ contract MockStarGate {
 
     // compose stargate to swap ETH on the source to ETH on the destination
     function swapETH(
-        uint16 _dstChainId, // destination Stargate chainId
+        uint16, // destination Stargate chainId
         address payable _refundAddress, // refund additional messageFee to this address
         bytes memory _toAddress, // the receiver of the destination ETH
         uint256 _amountLD, // the amount, in Local Decimals, to be swapped
@@ -52,7 +52,7 @@ contract MockStarGate {
         SendParam calldata sendParam,
         MessagingFee calldata,
         address refundAddress
-    ) public payable returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt, Ticket memory ticket) {
+    ) public payable returns (MessagingReceipt memory messagingReceipt, OFTReceipt memory oftReceipt, Ticket memory ticket) {
         swapETH(
             uint16(sendParam.dstEid),
             payable(refundAddress),
@@ -60,6 +60,8 @@ contract MockStarGate {
             sendParam.amountLD,
             sendParam.minAmountLD
         );
+
+        return (messagingReceipt, oftReceipt, ticket);
     }
 
     function setSlippage(uint256 _slippage) external {

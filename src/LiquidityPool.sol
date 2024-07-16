@@ -119,7 +119,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
 
     function totalAssets() public view virtual returns (uint256) {
         uint256 sfrxETH_balance = 0;
-        uint256 eigenLayerBalance = 0;
+        // uint256 eigenLayerBalance = 0; commenting this as this is unsed atm
 
         if (address(sfrxETH) != address(0)) {
             sfrxETH_balance = sfrxETH.balanceOf(address(this));
@@ -235,7 +235,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         protocolTreasury = _treasury;
     }
 
-    function _getFee(uint256 _amountIn, uint256 _fee) internal view returns (uint256 feeAmount) {
+    function _getFee(uint256 _amountIn, uint256 _fee) internal pure returns (uint256 feeAmount) {
         feeAmount = (_amountIn * _fee + PRECISION_SUB_ONE) / PRECISION;
     }
 

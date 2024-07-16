@@ -199,7 +199,7 @@ contract Messenger is Initializable, OwnableUpgradeable, UUPSUpgradeable, IMesse
         );
     }
 
-    function _getFee(uint256 _amountIn, uint256 _fee) internal returns (uint256 feeAmount) {
+    function _getFee(uint256 _amountIn, uint256 _fee) internal pure returns (uint256 feeAmount) {
         feeAmount = (_amountIn * _fee + PRECISION_SUB_ONE) / PRECISION;
     }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 
 contract NativeMintingL2 is TestSetup {
-    function test_L2_minting_rate() public {
+    function test_L2_minting_rate() public view {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
         assertEq(amountOut, 99.9 ether);
     }

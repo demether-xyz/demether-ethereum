@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 
 contract NativeMintingL1 is TestSetup {
-    function test_L1_minting_rate() public {
+    function test_L1_minting_rate() public view {
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
     }
@@ -62,7 +62,7 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL2.getRate(), 1.09 ether);
     }
 
-    function test_L1_quote() public {
+    function test_L1_quote() public view {
         assert(messengerL1.quoteLayerZero(l2Eid) > 0);
     }
 }

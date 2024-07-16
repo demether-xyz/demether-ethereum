@@ -93,7 +93,7 @@ contract DepositsManagerL1 is
         require(token.mint(msg.sender, amountOut), "Token minting failed");
     }
 
-    function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
+    function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         uint256 depositFee = 0; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 rate = getRate();
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
@@ -125,7 +125,7 @@ contract DepositsManagerL1 is
         if (msg.value < totalFees) revert InsufficientFee();
     }
 
-    function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
+    function onMessageReceived(uint32, bytes calldata) external nonReentrant {
         //        if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         revert("not implemented");
     }
