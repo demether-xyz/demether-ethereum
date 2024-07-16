@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 // *******************************************************
 // *    ____                      _   _                  *
@@ -13,27 +13,34 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {OFT} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
-
+import { OFTUpgradeable } from "@fraxfinance/layerzero-v2-upgradeable/oapp/contracts/oft/OFTUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Upgrade.sol";
 /*
 TODO
     Make Upgradable using pattern https://blastscan.io/address/0x20ee00f43ef299dba82ba6fef537756dabe38cc7#code
     Determine ownership flow
 */
 
-contract DOFT is OFT {
-    /// @notice Initializes the DOFT.sol.sol contract.
-    /// @param _name The name of the token.
-    /// @param _symbol The symbol of the token.
-    /// @param _lzEndpoint The LayerZero endpoint address.
-    /// @param _delegate The address to transfer ownership to.
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _lzEndpoint,
-        address _delegate
-    ) OFT(_name, _symbol, _lzEndpoint, _delegate) {
-        _transferOwnership(_delegate);
+contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+    /**
+     * @dev Constructor for MintableOFT
+     * @param endpoint The layer zero endpoint address
+     */
+    constructor(address endpoint) OFTUpgradeable(endpoint) {
+        // _disableInitializers();
+    }
+
+    /**
+     * @dev Initializes the contract
+     * @param name The name of the token
+     * @param symbol The symbol of the token
+     * @param owner The owner of the token
+     */
+    function initialize(string memory name, string memory symbol, address owner) external virtual initializer {
+        __OFT_init(name, symbol, owner);
+        __Ownable_init(owner);
+        __UUPSUpgradeable_init();
     }
 
     function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
@@ -44,5 +51,11 @@ contract DOFT is OFT {
     function burn(address _from, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_from, _amount);
         return true;
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function getImplementation() external view returns (address) {
+        return ERC1967Utils._getImplementation();
     }
 }
