@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Test, console } from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 import {
     TestSetupEigenLayer,
@@ -10,7 +10,7 @@ import {
     IStrategy,
     IDelegationManager
 } from "./TestSetupEigenLayer.sol";
-import "@foundry-upgrades/ProxyTester.sol";
+import { ProxyTester } from "@foundry-upgrades/ProxyTester.sol";
 import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import { frxETH } from "@frxETH/frxETH.sol";
 import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
@@ -22,21 +22,25 @@ import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
 import { Messenger } from "../src/Messenger.sol";
 
-import "./mocks/WETH.sol";
-import "./mocks/MockStarGate.sol";
+import { WETH } from "./mocks/WETH.sol";
+import { MockStarGate } from "./mocks/MockStarGate.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
-    uint8 public constant STARGATE_v2 = 3;
+    uint8 public constant STARGATE_V2 = 3;
+    uint32 public constant L1_EID = 1;
+    uint32 public constant L2_EID = 2;
 
-    address internal admin;
-    address internal owner;
+    struct Role {
+        address admin;
+        address owner;
+    }
+
+    Role internal role;
+
     ProxyTester internal proxy = new ProxyTester();
     bytes internal data;
-
-    uint32 l1Eid = 1;
-    uint32 l2Eid = 2;
     DOFT internal l1token;
     DOFT internal l2token;
 
@@ -53,22 +57,22 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
 
-    function _setUp_L1() public {
+    function setUpL1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
 
         // Deploy frxETH, sfrxETH
-        frxETH frxETHtoken = new frxETH(admin, admin);
+        frxETH frxETHtoken = new frxETH(role.admin, role.admin);
         sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1);
         frxETHMinterContract = new frxETHMinter(
             0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b,
             address(frxETHtoken),
             address(sfrxETHtoken),
-            admin,
-            admin,
+            role.admin,
+            role.admin,
             ""
         );
-        vm.prank(admin);
+        vm.prank(role.admin);
         frxETHtoken.addMinter(address(frxETHMinterContract));
 
         // increase sfrxETHtoken rate to 2.0
@@ -82,19 +86,21 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         wETHL1 = new WETH();
 
         // deploy DepositsManagerL1.sol
-        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), owner, true);
-        depositsManagerL1 = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), admin, data)));
+        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), role.owner, true);
+        depositsManagerL1 = DepositsManagerL1(
+            payable(proxy.deploy(address(new DepositsManagerL1()), role.admin, data))
+        );
         vm.label(address(depositsManagerL1), "depositsManagerL1");
 
         // token
-        l1token = new DOFT(address(endpoints[l1Eid]));
+        l1token = new DOFT(address(endpoints[L1_EID]));
         vm.label(address(l1token), "l1token");
 
         l1token.initialize("", "", address(depositsManagerL1));
 
         // deploy LiquidityPool
-        data = abi.encodeWithSignature("initialize(address,address)", address(depositsManagerL1), owner);
-        liquidityPool = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), admin, data)));
+        data = abi.encodeWithSignature("initialize(address,address)", address(depositsManagerL1), role.owner);
+        liquidityPool = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), role.admin, data)));
         vm.label(address(liquidityPool), "liquidityPool");
 
         // deploy Messenger
@@ -102,23 +108,25 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
             "initialize(address,address,address)",
             address(wETHL1),
             address(depositsManagerL1),
-            owner
+            role.owner
         );
-        messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
+        messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL1), "messengerL1");
     }
 
-    function _setUp_L2() public {
+    function setUpL2() public {
         wETHL2 = new WETH();
         stargateL2 = new MockStarGate();
 
         // deploy DepositsManagerL2.sol
-        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), owner, false);
-        depositsManagerL2 = DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), admin, data)));
+        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), role.owner, false);
+        depositsManagerL2 = DepositsManagerL2(
+            payable(proxy.deploy(address(new DepositsManagerL2()), role.admin, data))
+        );
         vm.label(address(depositsManagerL2), "depositsManagerL2");
 
         // deploy token
-        l2token = new DOFT(address(endpoints[l2Eid]));
+        l2token = new DOFT(address(endpoints[L2_EID]));
         vm.label(address(l2token), "l2token");
 
         l2token.initialize("", "", address(depositsManagerL2));
@@ -128,14 +136,14 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
             "initialize(address,address,address)",
             address(wETHL2),
             address(depositsManagerL2),
-            owner
+            role.owner
         );
-        messengerL2 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
+        messengerL2 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL2), "messengerL2");
     }
 
-    function _settings() public {
-        vm.startPrank(owner);
+    function settings() public {
+        vm.startPrank(role.owner);
 
         // L1
         depositsManagerL1.setToken(address(l1token));
@@ -146,16 +154,16 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
         _bridgeIds[0] = LAYERZERO;
-        _routers[0] = endpoints[l1Eid];
-        messengerL1.setRouters(_bridgeIds, _routers, owner);
+        _routers[0] = endpoints[L1_EID];
+        messengerL1.setRouters(_bridgeIds, _routers, role.owner);
 
         // LayerZero for messages
         messengerL1.setSettingsMessages(
-            l2Eid,
+            L2_EID,
             IMessenger.Settings(
                 LAYERZERO,
-                l2Eid,
-                l2Eid,
+                L2_EID,
+                L2_EID,
                 address(messengerL2),
                 10 gwei,
                 0,
@@ -171,17 +179,17 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         _routers = new address[](2);
         _bridgeIds[0] = LAYERZERO;
         _bridgeIds[1] = STARGATE;
-        _routers[0] = endpoints[l2Eid];
+        _routers[0] = endpoints[L2_EID];
         _routers[1] = address(stargateL2);
-        messengerL2.setRouters(_bridgeIds, _routers, owner);
+        messengerL2.setRouters(_bridgeIds, _routers, role.owner);
 
         // LayerZero for messages
         messengerL2.setSettingsMessages(
-            l1Eid,
+            L1_EID,
             IMessenger.Settings(
                 LAYERZERO,
-                l1Eid,
-                l1Eid,
+                L1_EID,
+                L1_EID,
                 address(messengerL1),
                 10 gwei,
                 0,
@@ -191,15 +199,15 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
         messengerL2.setSettingsTokens(
-            l1Eid,
-            IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, "")
+            L1_EID,
+            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
         );
 
         // todo set token peers >> test L1 to L2 transfers
         vm.stopPrank();
     }
 
-    function _setUp_EigenLayer() public {
+    function setupEigenLayer() public {
         TestSetupEigenLayer.setUp();
 
         // deploy sfrxETH strategy
@@ -232,42 +240,42 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.stopPrank();
 
         // set-up EigenLayer
-        vm.prank(owner);
+        vm.prank(role.owner);
         liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
     }
 
     function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {
-        admin = vm.addr(uint256(0x123));
-        vm.label(admin, "Admin");
+        role.admin = vm.addr(uint256(0x123));
+        vm.label(role.admin, "Admin");
 
-        owner = vm.addr(uint256(0x456));
-        vm.label(owner, "Owner");
+        role.owner = vm.addr(uint256(0x456));
+        vm.label(role.owner, "Owner");
 
-        _setUp_L1();
-        _setUp_L2();
-        _settings();
-        _sync_rate();
-        _setUp_EigenLayer();
+        setUpL1();
+        setUpL2();
+        settings();
+        syncRate();
+        setupEigenLayer();
     }
 
     /// @dev LayerZero syncing
-    function _sync() internal {
+    function sync() internal {
         // destination L1
-        // verifyPackets(l1Eid, addressToBytes32(address(messengerL1)));
+        // verifyPackets(L1_EID, addressToBytes32(address(messengerL1)));
 
         // destination L2
-        verifyPackets(l2Eid, addressToBytes32(address(messengerL2)));
+        verifyPackets(L2_EID, addressToBytes32(address(messengerL2)));
     }
 
-    function _sync_rate() internal {
+    function syncRate() internal {
         uint32[] memory _chainId = new uint32[](1);
         uint256[] memory _chainFee = new uint256[](1);
         uint256 fee = 10 gwei;
-        _chainId[0] = l2Eid;
+        _chainId[0] = L2_EID;
         _chainFee[0] = fee;
         vm.roll(block.number + 1);
         depositsManagerL1.syncRate{ value: fee }(_chainId, _chainFee);
-        _sync();
+        sync();
     }
 
     function _rewards(uint256 amount) internal {

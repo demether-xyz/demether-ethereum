@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "./TestSetup.sol";
+import { TestSetup } from "./TestSetup.sol";
 
 contract NativeMintingL1 is TestSetup {
-    function test_L1_minting_rate() public view {
+    function testL1MintingRate() public view {
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
     }
 
-    function test_L1_deposit_weth() public {
+    function testL1DepositWeth() public {
         uint256 amount = 100 ether;
         wETHL1.deposit{ value: amount }();
         wETHL1.approve(address(depositsManagerL1), amount);
@@ -18,7 +18,7 @@ contract NativeMintingL1 is TestSetup {
         assertEq(l1token.balanceOf(address(this)), 100 ether);
     }
 
-    function test_L1_deposit_eth() public {
+    function testL1DepositEth() public {
         uint256 amount = 100 ether;
         uint256 balanceBefore = address(this).balance;
         depositsManagerL1.depositETH{ value: amount }();
@@ -26,7 +26,7 @@ contract NativeMintingL1 is TestSetup {
         assertEq(l1token.balanceOf(address(this)), 100 ether);
     }
 
-    function test_L1_add_liquidity() public {
+    function testL1AddLiquidity() public {
         assertEq(depositsManagerL1.getRate(), 1 ether);
         depositsManagerL1.depositETH{ value: 100 ether }();
         depositsManagerL1.addLiquidity();
@@ -45,7 +45,7 @@ contract NativeMintingL1 is TestSetup {
         assertEq(liquidityPool.totalShares(), 200 ether);
     }
 
-    function test_L1_sync_rate() public {
+    function testL1SyncRate() public {
         depositsManagerL1.depositETH{ value: 100 ether }();
         depositsManagerL1.addLiquidity();
 
@@ -58,11 +58,11 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL2.getRate(), 1 ether);
 
         // sync L2
-        _sync_rate();
+        syncRate();
         assertEq(depositsManagerL2.getRate(), 1.09 ether);
     }
 
-    function test_L1_quote() public view {
-        assert(messengerL1.quoteLayerZero(l2Eid) > 0);
+    function testL1Quote() public view {
+        assert(messengerL1.quoteLayerZero(L2_EID) > 0);
     }
 }

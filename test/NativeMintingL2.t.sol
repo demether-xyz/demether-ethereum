@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "./TestSetup.sol";
+import { TestSetup } from "./TestSetup.sol";
 
 contract NativeMintingL2 is TestSetup {
-    function test_L2_minting_rate() public view {
+    function testL2MintingRate() public view {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
         assertEq(amountOut, 99.9 ether);
     }
 
-    function test_L2_deposit_weth() public {
+    function testL2DepositWeth() public {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
@@ -18,12 +18,12 @@ contract NativeMintingL2 is TestSetup {
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
     }
 
-    function test_L2_deposit_eth() public {
+    function testL2DepositEth() public {
         vm.expectRevert("Native token not supported");
         depositsManagerL2.depositETH{ value: 100 ether }();
     }
 
-    function test_L2_sync_tokens() public {
+    function testL2SyncTokens() public {
         // deposit L2
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
@@ -42,13 +42,13 @@ contract NativeMintingL2 is TestSetup {
     }
 
     /// @dev Slippage cost higher than fee, creates a whole
-    function test_L2_high_slippage() public {
+    function testL2HighSlippage() public {
         // initialize the rate on L1
         depositsManagerL1.depositETH{ value: 100 ether }();
         depositsManagerL1.addLiquidity();
         assertEq(depositsManagerL1.getRate(), 1 ether);
 
-        test_L2_sync_tokens();
+        testL2SyncTokens();
         depositsManagerL1.addLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
@@ -71,7 +71,7 @@ contract NativeMintingL2 is TestSetup {
     }
 
     /// @dev Rewards increase higher than rate creates a whole
-    function test_L2_high_rewards() public {
+    function testL2HighRewards() public {
         stargateL2.setSlippage(0);
 
         // initialize the rate on L1 + add rewards

@@ -13,26 +13,26 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { FixedPointMathLib } from "solmate/utils/FixedPointMathLib.sol";
-
-import "./interfaces/ILiquidityPool.sol";
-import "./interfaces/IfrxETHMinter.sol";
-import "@frxETH/IsfrxETH.sol";
-
-import { IStrategyManager, IStrategy, IDelegationManager } from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
+import { IsfrxETH } from "@frxETH/IsfrxETH.sol";
+import { IfrxETHMinter } from "./interfaces/IfrxETHMinter.sol";
+import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
 import { ISignatureUtils } from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
+import { IStrategyManager, IStrategy, IDelegationManager } from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
 
-import "forge-std/console.sol"; // todo remove
 /**
  * @title LiquidityPool
  * @dev Contracts holds ETH and determines the global rate
  */
 
 contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, ILiquidityPool {
+    // Custom error
+    error ImplementationIsNotContract(address newImplementation);
+
     using FixedPointMathLib for uint256;
 
     uint256 internal constant PRECISION = 1e18;
@@ -118,23 +118,23 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function totalAssets() public view virtual returns (uint256) {
-        uint256 sfrxETH_balance = 0;
+        uint256 sfrxEthBalance = 0;
         // uint256 eigenLayerBalance = 0; commenting this as this is unsed atm
 
         if (address(sfrxETH) != address(0)) {
-            sfrxETH_balance = sfrxETH.balanceOf(address(this));
+            sfrxEthBalance = sfrxETH.balanceOf(address(this));
         }
 
         // EigenLayer restaked sfrxETH
         if (eigenLayerStrategyManager != address(0)) {
             IStrategy strategy = IStrategy(eigenLayerStrategy);
-            sfrxETH_balance += strategy.userUnderlyingView(address(this));
+            sfrxEthBalance += strategy.userUnderlyingView(address(this));
         }
 
         // TODO this gives frxETH, but must be converted to ETH
-        uint frxETH_balance = sfrxETH.convertToAssets(sfrxETH_balance);
+        uint256 frxEthBalance = sfrxETH.convertToAssets(sfrxEthBalance);
 
-        return address(this).balance + frxETH_balance - protocolAccruedFees;
+        return address(this).balance + frxEthBalance - protocolAccruedFees;
     }
 
     function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
@@ -193,13 +193,13 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     function _eigenLayerRestake() internal {
         if (eigenLayerStrategyManager == address(0) || fraxMinter == address(0)) return;
 
-        uint256 sfrxETH_balance = sfrxETH.balanceOf(address(this));
-        if (!sfrxETH.approve(eigenLayerStrategyManager, sfrxETH_balance)) revert ApprovalFailed();
+        uint256 sfrxEthBalance = sfrxETH.balanceOf(address(this));
+        if (!sfrxETH.approve(eigenLayerStrategyManager, sfrxEthBalance)) revert ApprovalFailed();
 
         uint256 shares = IStrategyManager(eigenLayerStrategyManager).depositIntoStrategy(
             IStrategy(eigenLayerStrategy),
             IERC20(address(sfrxETH)),
-            sfrxETH_balance
+            sfrxEthBalance
         );
         if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
     }
@@ -245,6 +245,6 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

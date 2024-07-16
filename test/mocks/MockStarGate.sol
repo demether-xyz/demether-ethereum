@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {
-    IOFT,
     SendParam,
     MessagingFee,
     MessagingReceipt,
@@ -10,6 +9,14 @@ import {
 } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 contract MockStarGate {
+    error StarGateInvalidTransferError(uint256 transferAmount, uint256 amountInLocalDecimals);
+    error StarGateInvalidSwapError(uint256 swapAmount);
+    error StarGateInvalidRefundAddressError(address refundAddress);
+    error StarGateInvalidFeeError(uint256 fee);
+    error StarGateInvalidSlippageError();
+    error EtherTransferError();
+    error DecodeAddressError();
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 
@@ -32,7 +39,7 @@ contract MockStarGate {
         uint256 _amountLD, // the amount, in Local Decimals, to be swapped
         uint256 _minAmountLD // the minimum amount accepted out on destination
     ) public payable {
-        require(msg.value > _amountLD, "Stargate: msg.value must be > _amountLD");
+        if (msg.value < _amountLD) revert StarGateInvalidTransferError(msg.value, _amountLD);
 
         // wrap the ETH into WETH
         // IStargateEthVault(stargateEthVault).deposit{value: _amountLD}();
@@ -40,18 +47,19 @@ contract MockStarGate {
 
         // messageFee is the remainder of the msg.value after wrap
         uint256 messageFee = msg.value - _amountLD;
-        require(messageFee >= 10 gwei, "!fee");
+        if (messageFee < 10 gwei) revert StarGateInvalidFeeError(messageFee);
 
         // compose a stargate swap() using the WETH that was just wrapped
-        require(_amountLD > 0, "Stargate: cannot swap 0");
-        require(_refundAddress != address(0x0), "Stargate: _refundAddress cannot be 0x0");
+        if (_amountLD == 0) revert StarGateInvalidSwapError(_amountLD);
+        if (_refundAddress == address(0x0)) revert StarGateInvalidRefundAddressError(_refundAddress);
 
         uint256 feeAmount = (_amountLD * slippage + PRECISION_SUB_ONE) / PRECISION;
-        require(_amountLD - feeAmount >= _minAmountLD, "!slippage");
+
+        if (_amountLD - feeAmount < _minAmountLD) revert StarGateInvalidSlippageError();
 
         address toAddress = decodeAddress(_toAddress);
         (bool sent, ) = toAddress.call{ value: _amountLD - feeAmount }("");
-        require(sent, "Failed to send Ether");
+        if (!sent) revert EtherTransferError();
     }
 
     function sendToken(
@@ -79,7 +87,7 @@ contract MockStarGate {
     }
 
     function decodeAddress(bytes memory data) public pure returns (address addr) {
-        require(data.length == 0x14);
+        if (data.length != 0x14) revert DecodeAddressError();
         assembly {
             addr := mload(add(data, 0x14))
         }

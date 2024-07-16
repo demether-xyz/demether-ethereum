@@ -20,12 +20,11 @@ import {
     ReentrancyGuardUpgradeable
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IDOFT } from "./interfaces/IDOFT.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
 
-import "./interfaces/IDOFT.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IDepositsManager.sol";
-import "forge-std/console.sol"; // todo remove
 /**
  * @title L2 Deposits Manager
  * @dev Base contract for Layer 2
@@ -40,6 +39,13 @@ contract DepositsManagerL2 is
     UUPSUpgradeable,
     IDepositsManager
 {
+    // Custom errors
+    error DepositFailed(address sender, uint256 amount);
+    error NativeTokenNotSupported();
+    error ZeroAmount();
+    error TokenMintFailed(address tokenReceiver, uint256 amount);
+    error ImplementationIsNotContract(address newImplementation);
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
@@ -64,8 +70,7 @@ contract DepositsManagerL2 is
     uint256 public rateSyncBlock;
 
     function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
-        require(_wETH != address(0), "Invalid wETH");
-
+        if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
@@ -78,26 +83,28 @@ contract DepositsManagerL2 is
     }
 
     function deposit(uint256 _amountIn) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn);
     }
 
     function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
+        if (!nativeSupport) revert NativeTokenNotSupported();
         wETH.deposit{ value: address(this).balance }();
         amountOut = _deposit(msg.value);
     }
 
     function _deposit(uint256 _amountIn) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
+        if (_amountIn == 0) revert ZeroAmount();
         amountOut = getConversionAmount(_amountIn);
         emit Deposit(msg.sender, _amountIn, amountOut);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+        if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
     }
 
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
-        uint256 depositFee = 1e15; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
+        uint256 depositFee = 1e15;
+        // TODO create system for fees setting
+        // depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
@@ -133,7 +140,8 @@ contract DepositsManagerL2 is
     /** OTHER **/
 
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
+
         token = IDOFT(_token);
     }
 
@@ -152,6 +160,6 @@ contract DepositsManagerL2 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }
