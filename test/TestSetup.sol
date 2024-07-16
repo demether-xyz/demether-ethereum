@@ -3,7 +3,13 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 
-import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy, IDelegationManager} from "./TestSetupEigenLayer.sol";
+import {
+    TestSetupEigenLayer,
+    StrategyBase,
+    TransparentUpgradeableProxy,
+    IStrategy,
+    IDelegationManager
+} from "./TestSetupEigenLayer.sol";
 import "@foundry-upgrades/ProxyTester.sol";
 import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {frxETH} from "@frxETH/frxETH.sol";
@@ -49,11 +55,6 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
 
-    error InvalidAddress();
-    error Unauthorized();
-    error InvalidFee();
-    error InvalidParametersLength();
-    
     function _setUp_L1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
@@ -62,12 +63,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         frxETH frxETHtoken = new frxETH(admin, admin);
         sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1);
         frxETHMinterContract = new frxETHMinter(
-            0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b,
-            address(frxETHtoken),
-            address(sfrxETHtoken),
-            admin,
-            admin,
-            ""
+            0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b, address(frxETHtoken), address(sfrxETHtoken), admin, admin, ""
         );
         vm.prank(admin);
         frxETHtoken.addMinter(address(frxETHMinterContract));
@@ -97,7 +93,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(liquidityPool), "liquidityPool");
 
         // deploy Messenger
-        data = abi.encodeWithSignature("initialize(address,address,address)", address(wETHL1), address(depositsManagerL1), owner);
+        data = abi.encodeWithSignature(
+            "initialize(address,address,address)", address(wETHL1), address(depositsManagerL1), owner
+        );
         messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
         vm.label(address(messengerL1), "messengerL1");
     }
@@ -116,7 +114,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(l2token), "l2token");
 
         // deploy Messenger
-        data = abi.encodeWithSignature("initialize(address,address,address)", address(wETHL2), address(depositsManagerL2), owner);
+        data = abi.encodeWithSignature(
+            "initialize(address,address,address)", address(wETHL2), address(depositsManagerL2), owner
+        );
         messengerL2 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
         vm.label(address(messengerL2), "messengerL2");
     }
@@ -177,7 +177,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         );
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
-        messengerL2.setSettingsTokens(l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, ""));
+        messengerL2.setSettingsTokens(
+            l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, "")
+        );
 
         // todo set token peers >> test L1 to L2 transfers
         vm.stopPrank();

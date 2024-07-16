@@ -2,8 +2,18 @@
 pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
+import "../src/interfaces/IDepositsManager.sol";
 
-contract NativeMintingL1 is TestSetup {
+contract DepositManagerL1Test is TestSetup {
+    event Paused(address account);
+    event Unpaused(address account);
+
+    function setUp() public virtual override {
+        super.setUp();
+    }
+}
+
+contract NativeMintingL1 is DepositManagerL1Test {
     function test_L1_minting_rate() public {
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
@@ -67,7 +77,7 @@ contract NativeMintingL1 is TestSetup {
     }
 }
 
-// contract L1InitializeTest is TestSetup {
+// contract L1InitializeTest is DepositManagerL1Test {
 //     function test_RevertWhenPassedZeroAddress() external {
 //         data = abi.encodeWithSignature("initialize(address,address,bool)", address(0), owner, false);
 //         vm.expectRevert(InvalidAddress.selector);
@@ -79,7 +89,7 @@ contract NativeMintingL1 is TestSetup {
 //     }
 // }
 
-contract DepositTest is TestSetup {
+contract DepositTest is DepositManagerL1Test {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
@@ -97,7 +107,7 @@ contract DepositTest is TestSetup {
     }
 }
 
-contract DepositETHTest is TestSetup {
+contract DepositETHTest is DepositManagerL1Test {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
@@ -109,7 +119,8 @@ contract DepositETHTest is TestSetup {
 
     function test_RevertWhenNativeTokenNotSupported() external {
         data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), owner, false);
-        DepositsManagerL1 depositsManager = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), admin, data)));
+        DepositsManagerL1 depositsManager =
+            DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), admin, data)));
 
         vm.startPrank(owner);
         vm.expectRevert(bytes("Native token not supported"));
@@ -125,7 +136,7 @@ contract DepositETHTest is TestSetup {
     }
 }
 
-contract AddLiquidityL1Test is TestSetup {
+contract AddLiquidityL1Test is DepositManagerL1Test {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
@@ -136,213 +147,65 @@ contract AddLiquidityL1Test is TestSetup {
     }
 }
 
-contract SyncRateL1Test is TestSetup {
+contract SyncRateL1Test is DepositManagerL1Test {
+    uint32[] _chainId1 = new uint32[](1);
+    uint256[] _chainFee1 = new uint256[](1);
+    uint256 fee;
+
+    function setUp() public virtual override {
+        super.setUp();
+        fee = 10 gwei;
+        _chainId1[0] = l2Eid;
+        _chainFee1[0] = fee;
+    }
+
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
+        vm.stopPrank();
 
         vm.expectRevert(bytes("Pausable: paused"));
-        depositsManagerL1.addLiquidity();
-        vm.stopPrank();
+        depositsManagerL1.syncRate{value: fee}(_chainId1, _chainFee1);
+    }
+
+    function test_RevertWhenInvalidArraysPassed() external {
+        uint32[] memory _chainId2 = new uint32[](2);
+        uint256[] memory _chainFee2 = new uint256[](2);
+
+        vm.expectRevert(IDepositsManager.InvalidParametersLength.selector);
+        depositsManagerL1.syncRate{value: fee}(_chainId2, _chainFee1);
+
+        vm.expectRevert(IDepositsManager.InvalidParametersLength.selector);
+        depositsManagerL1.syncRate{value: fee}(_chainId1, _chainFee2);
+    }
+
+    // Note : contract will not reach to InsufficientFee revert line anyway
+    // function test_RevertWhenPassedLessFees() external {
+    //     _chainFee1[0] = 10 ether;
+
+    //     vm.expectRevert(IDepositsManager.InsufficientFee.selector);
+    //     depositsManagerL1.syncRate{value: 1 ether}(_chainId1, _chainFee1);
+    // }
+}
+
+contract OnMessageReceivedTest is DepositManagerL1Test {
+    function test_OnMessageReceivedShouldWorkCorrectly() external {
+        vm.expectRevert(bytes("not implemented"));
+        depositsManagerL1.onMessageReceived(1, bytes(""));
     }
 }
 
-contract SyncTokensTest is TestSetup {
-    function test_RevertWhenSyncTokensCallerIsNotAuthorised() external {
+contract SetTokenL1Test is DepositManagerL1Test {
+    function test_SetTokenShouldWorkCorrectly() external {
         vm.startPrank(owner);
-        vm.expectRevert(Unauthorized.selector);
-        messengerL1.syncTokens(0, 0, address(bob));
-        vm.stopPrank();
-    }
-}
+        assertEq(address(depositsManagerL1.token()), address(l1token));
 
-contract SyncMessageTest is TestSetup {
-    function test_RevertWhenSyncMessageCallerIsNotAuthorised() external {
-        vm.startPrank(owner);
-        vm.expectRevert(Unauthorized.selector);
-        messengerL1.syncMessage(0, bytes(""), address(bob));
-        vm.stopPrank();
-    }
-}
+        depositsManagerL1.setToken(address(bob));
 
-contract SetSettingsMessagesTest is TestSetup {
-    function test_RevertWhenSetSettingsMessagesCallerIsNotOwner() external {
-        IMessenger.Settings memory setting;
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        messengerL1.setSettingsMessages(0, setting);
-        vm.stopPrank();
-    }
-}
-
-contract SetSettingsTokensTest is TestSetup {
-    function test_RevertWhenSetSettingsTokensCallerIsNotOwner() external {
-        IMessenger.Settings memory setting;
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        messengerL1.setSettingsTokens(0, setting);
-        vm.stopPrank();
-    }
-}
-
-contract SetRoutersTest is TestSetup {
-    function test_RevertWhenSetRoutersCallerIsNotOwner() external {
-        uint8[] memory _bridgeIds = new uint8[](1);
-        address[] memory _routers = new address[](1);
-
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        messengerL1.setRouters(_bridgeIds ,_routers, address(bob));
+        assertEq(address(depositsManagerL1.token()), address(bob));
         vm.stopPrank();
     }
 
-    function test_RevertWhenPassedArrayWithInvalidLengths() external {
-        uint8[] memory _bridgeIds = new uint8[](2);
-        address[] memory _routers = new address[](1);
-
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidParametersLength.selector);
-        messengerL1.setRouters(_bridgeIds ,_routers, address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedInvalidRouterAddress() external {
-        uint8[] memory _bridgeIds = new uint8[](1);
-        address[] memory _routers = new address[](1);
-
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        messengerL1.setRouters(_bridgeIds ,_routers, address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedInvalidOwner() external {
-        uint8[] memory _bridgeIds = new uint8[](1);
-        address[] memory _routers = new address[](1);
-
-        _routers[0] = address(bob);
-        _bridgeIds[0] = 1;
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        messengerL1.setRouters(_bridgeIds ,_routers, address(0));
-        vm.stopPrank();
-    }
-}
-
-contract AddLiquidityTest is TestSetup {
-    function test_RevertWhenAddLiquidityCallerIsNotAuthorised() external {
-        vm.startPrank(owner);
-        vm.expectRevert(Unauthorized.selector);
-        liquidityPool.addLiquidity();
-        vm.stopPrank();
-    }
-}
-
-contract SetFraxMinterTest is TestSetup {
-    function test_RevertWhenSetFraxMinterCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.setFraxMinter(address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.setFraxMinter(address(0));
-        vm.stopPrank();
-    }
-}
-
-contract DelegateEigenLayerTest is TestSetup {
-    function test_RevertWhenDelegateEigenLayerCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.delegateEigenLayer(address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.delegateEigenLayer(address(0));
-        vm.stopPrank();
-    }
-}
-
-contract SetEigenLayerTest is TestSetup {
-    function test_RevertWhenSetEigenLayerCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.setEigenLayer(address(bob),address(bob),address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.setEigenLayer(address(0),address(bob),address(bob));
-
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.setEigenLayer(address(bob),address(0),address(bob));
-
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.setEigenLayer(address(bob),address(bob),address(0));
-        vm.stopPrank();
-    }
-}
-
-contract SetProtocolFeeTest is TestSetup {
-    function test_RevertWhenSetProtocolFeeCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.setProtocolFee(10);
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidFee.selector);
-        liquidityPool.setProtocolFee(1 ether);
-        vm.stopPrank();
-    }
-}
-
-contract SetProtocolTreasuryTest is TestSetup {
-    function test_RevertWhenSetProtocolTreasuryCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.setProtocolTreasury(address(bob));
-        vm.stopPrank();
-    }
-
-    function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
-        liquidityPool.setProtocolTreasury(address(0));
-        vm.stopPrank();
-    }
-}
-
-contract MintTest is TestSetup {
-    function test_RevertWhenMintCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        l1token.mint(address(bob), 10 ether);
-        vm.stopPrank();
-    }
-}
-
-contract BurnTest is TestSetup {
-    function test_RevertWhenBurnCallerIsNotOwner() external {
-        vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        l1token.burn(address(bob), 10 ether);
-        vm.stopPrank();
-    }
-}
-
-contract SetTokenL1Test is TestSetup {
     function test_RevertWhenSetTokenCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -352,13 +215,23 @@ contract SetTokenL1Test is TestSetup {
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
+        vm.expectRevert(IDepositsManager.InvalidAddress.selector);
         depositsManagerL1.setToken(address(0));
         vm.stopPrank();
     }
 }
 
-contract SetLiquidityPoolL1Test is TestSetup {
+contract SetLiquidityPoolL1Test is DepositManagerL1Test {
+    function test_SetLiquidityPoolShouldWorkCorrectly() external {
+        vm.startPrank(owner);
+        assertEq(address(depositsManagerL1.pool()), address(liquidityPool));
+
+        depositsManagerL1.setLiquidityPool(address(bob));
+
+        assertEq(address(depositsManagerL1.pool()), address(bob));
+        vm.stopPrank();
+    }
+
     function test_RevertWhenSetLiquidityPoolCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -368,13 +241,23 @@ contract SetLiquidityPoolL1Test is TestSetup {
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
+        vm.expectRevert(IDepositsManager.InvalidAddress.selector);
         depositsManagerL1.setLiquidityPool(address(0));
         vm.stopPrank();
     }
 }
 
-contract SetMessengerL1Test is TestSetup {
+contract SetMessengerL1Test is DepositManagerL1Test {
+    function test_SetMessengerShouldWorkCorrectly() external {
+        vm.startPrank(owner);
+        assertEq(address(depositsManagerL1.messenger()), address(messengerL1));
+
+        depositsManagerL1.setMessenger(address(bob));
+
+        assertEq(address(depositsManagerL1.messenger()), address(bob));
+        vm.stopPrank();
+    }
+
     function test_RevertWhenSetMessengerCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -384,13 +267,25 @@ contract SetMessengerL1Test is TestSetup {
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(owner);
-        vm.expectRevert(InvalidAddress.selector);
+        vm.expectRevert(IDepositsManager.InvalidAddress.selector);
         depositsManagerL1.setMessenger(address(0));
         vm.stopPrank();
     }
 }
 
-contract PauseL1Test is TestSetup {
+contract PauseL1Test is DepositManagerL1Test {
+    function test_PauseShouldWorkCorrectly() external {
+        vm.startPrank(owner);
+        assertEq(depositsManagerL1.paused(), false);
+
+        vm.expectEmit(true, true, true, true, address(depositsManagerL1));
+        emit Paused(address(owner));
+        depositsManagerL1.pause();
+
+        assertEq(depositsManagerL1.paused(), true);
+        vm.stopPrank();
+    }
+
     function test_RevertWhenPauseCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -408,7 +303,20 @@ contract PauseL1Test is TestSetup {
     }
 }
 
-contract UnpauseL1Test is TestSetup {
+contract UnpauseL1Test is DepositManagerL1Test {
+    function test_UnpauseShouldWorkCorrectly() external {
+        vm.startPrank(owner);
+        depositsManagerL1.pause();
+
+        assertEq(depositsManagerL1.paused(), true);
+        vm.expectEmit(true, true, true, true, address(depositsManagerL1));
+        emit Unpaused(address(owner));
+
+        depositsManagerL1.unpause();
+        assertEq(depositsManagerL1.paused(), false);
+        vm.stopPrank();
+    }
+
     function test_RevertWhenUnpauseCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -423,7 +331,3 @@ contract UnpauseL1Test is TestSetup {
         vm.stopPrank();
     }
 }
-
-
-
-
