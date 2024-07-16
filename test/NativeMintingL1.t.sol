@@ -89,7 +89,7 @@ contract NativeMintingL1 is DepositManagerL1Test {
 //     }
 // }
 
-contract DepositTest is DepositManagerL1Test {
+contract DepositTestL1 is DepositManagerL1Test {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
@@ -107,7 +107,7 @@ contract DepositTest is DepositManagerL1Test {
     }
 }
 
-contract DepositETHTest is DepositManagerL1Test {
+contract DepositETHTestL1 is DepositManagerL1Test {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(owner);
         depositsManagerL1.pause();
@@ -133,6 +133,12 @@ contract DepositETHTest is DepositManagerL1Test {
         vm.expectRevert(bytes("Amount in zero"));
         depositsManagerL1.depositETH();
         vm.stopPrank();
+    }
+}
+
+contract GetRateL1Test is DepositManagerL1Test {
+    function test_GetRateShouldWorkCorrectly() external {
+        assertEq(depositsManagerL1.getRate(), liquidityPool.getRate());
     }
 }
 
@@ -188,7 +194,7 @@ contract SyncRateL1Test is DepositManagerL1Test {
     // }
 }
 
-contract OnMessageReceivedTest is DepositManagerL1Test {
+contract OnMessageReceivedL1Test is DepositManagerL1Test {
     function test_OnMessageReceivedShouldWorkCorrectly() external {
         vm.expectRevert(bytes("not implemented"));
         depositsManagerL1.onMessageReceived(1, bytes(""));
