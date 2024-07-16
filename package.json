@@ -4,7 +4,7 @@
   "license": "MIT",
   "author": "jdorado <juancamilo.dorado@gmail.com>",
   "scripts": {
-    "test": "forge test -vv",
+    "test": "forge test --fork-url https://eth-sepolia.g.alchemy.com/v2/aQpO3RJJ-V-8YLOxlprR3wvQO0oy7zSD",
     "commit": "cz",
     "lint:sol": "solhint --max-warnings 0 \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\"",
     "prettier:check": "prettier --check \"**/*.{json,md,sol,yml}\"",
