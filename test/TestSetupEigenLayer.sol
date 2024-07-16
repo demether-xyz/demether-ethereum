@@ -114,7 +114,7 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
     // address public constant CHALLENGER = address(0x6966904396bF2f8b173350bCcec5007A52669873);
     uint256 public constant INITIAL_BEACON_CHAIN_ORACLE_THRESHOLD = 3;
     uint32 public constant PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
-    address public EIGEN_LAYER_REPUTED_MULTISIG = address(this);
+    address public eigenLayerReputedMultisig = address(this);
 
     string internal goerliDeploymentConfig;
     // = vm.readFile("script/output/goerli/M1_deployment_goerli_2023_3_23.json");
@@ -343,7 +343,7 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
             address(delegationImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                EIGEN_LAYER_REPUTED_MULTISIG,
+                eigenLayerReputedMultisig,
                 eigenLayerContracts.eigenLayerPauserReg,
                 0 /*initialPausedStatus*/,
                 MIN_WITHDRAWAL_DELAY_BLOCKS,
@@ -356,8 +356,8 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
             address(strategyManagerImplementation),
             abi.encodeWithSelector(
                 StrategyManager.initialize.selector,
-                EIGEN_LAYER_REPUTED_MULTISIG,
-                EIGEN_LAYER_REPUTED_MULTISIG,
+                eigenLayerReputedMultisig,
+                eigenLayerReputedMultisig,
                 eigenLayerContracts.eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
@@ -367,7 +367,7 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
             address(slasherImplementation),
             abi.encodeWithSelector(
                 Slasher.initialize.selector,
-                EIGEN_LAYER_REPUTED_MULTISIG,
+                eigenLayerReputedMultisig,
                 eigenLayerContracts.eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
@@ -378,7 +378,7 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
             abi.encodeWithSelector(
                 EigenPodManager.initialize.selector,
                 addresses.beaconChainOracleAddress,
-                EIGEN_LAYER_REPUTED_MULTISIG,
+                eigenLayerReputedMultisig,
                 eigenLayerContracts.eigenLayerPauserReg,
                 0 /*initialPausedStatus*/
             )
@@ -390,7 +390,7 @@ contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
             address(delayedWithdrawalRouterImplementation),
             abi.encodeWithSelector(
                 DelayedWithdrawalRouter.initialize.selector,
-                EIGEN_LAYER_REPUTED_MULTISIG,
+                eigenLayerReputedMultisig,
                 eigenLayerContracts.eigenLayerPauserReg,
                 initPausedStatus,
                 withdrawalDelayBlocks
