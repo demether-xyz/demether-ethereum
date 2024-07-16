@@ -1,0 +1,69 @@
+on: [push]
+
+name: test
+
+jobs:
+  check:
+    name: Foundry project CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1.2.0
+
+      - name: Set up environment
+        run: |
+          echo "Setting up environment variables"
+          echo "FOUNDRY_PROFILE=test" >> $GITHUB_ENV
+          echo "RPC_URL=https://eth-sepolia.g.alchemy.com/v2/aQpO3RJJ-V-8YLOxlprR3wvQO0oy7zSD" >> $GITHUB_ENV
+          echo "PRIVATE_KEY=0x69721ef73e567861731e366f4bef36883f69f79e2075742938f1c1509a5fa379" >> $GITHUB_ENV
+          echo "ETHERSCAN_API_KEY=C35HX5IDZFZJVK8F6ADZ1UNRAWCJVFMDZH" >> $GITHUB_ENV
+          echo "LAYER_ZERO_ENDPOINT=0x6EDCE65403992e310A62460808c4b910D972f10f" >> $GITHUB_ENV
+          echo "OWNER=0x08FD10915E548117a5677Aea7F77741754eF44Cf" >> $GITHUB_ENV
+          echo "TOKEN_NAME=Dether Token" >> $GITHUB_ENV
+          echo "TOKEN_SYMBOL=DETH" >> $GITHUB_ENV
+          echo "PROXY_ADDRESS=0xEa76Ed0B9D53DB77312db27Ecfe9CB2081240Cfc" >> $GITHUB_ENV
+
+          # Add any other environment setup needed here
+
+      - name: "Install Bun"
+        uses: "oven-sh/setup-bun@v1"
+
+      - name: "Install the dependencies"
+        run: "bun install"
+
+      - name: "Lint the code"
+        run: "bun run lint:sol"
+
+      - name: "Add lint summary"
+        run: |
+          echo "## Lint results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run tests
+        run: |
+          echo "Running Foundry tests"
+          forge test --fork-url https://eth-sepolia.g.alchemy.com/v2/aQpO3RJJ-V-8YLOxlprR3wvQO0oy7zSD || (echo "Tests failed" && exit 1)
+
+      - name: Collect test results
+        if: failure()
+        run: |
+          echo "Collecting test results for debugging"
+          forge test -vvv > test_results.log || true
+          cat test_results.log
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test_results.log
