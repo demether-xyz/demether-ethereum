@@ -7,25 +7,29 @@ import {
     TestSetupEigenLayer,
     StrategyBase,
     TransparentUpgradeableProxy,
-    IStrategy,
-    IDelegationManager
+    StrategyManager
 } from "./TestSetupEigenLayer.sol";
 import { ProxyTester } from "@foundry-upgrades/ProxyTester.sol";
 import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import { frxETH } from "@frxETH/frxETH.sol";
 import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
 import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
+// import { StrategyManagerStorage } from "@eigenlayer/contracts/core/StrategyManagerStorage.sol";
 
 import { DOFT } from "../src/DOFT.sol";
 import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
 import { Messenger } from "../src/Messenger.sol";
+import { IStrategy } from "@eigenlayer/contracts/interfaces/IStrategy.sol";
+import { IDelegationManager } from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 
 import { WETH } from "./mocks/WETH.sol";
 import { MockStarGate } from "./mocks/MockStarGate.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
+    StrategyManager public strategyManager;
+
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
     uint8 public constant STARGATE_V2 = 3;
@@ -214,9 +218,13 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         StrategyBase sfrxETHStrategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(baseStrategyImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerPauserReg)
+                    address(mockContracts.baseStrategyImplementation),
+                    address(eigenLayerContracts.eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        StrategyBase.initialize.selector,
+                        sfrxETHtoken,
+                        eigenLayerContracts.eigenLayerPauserReg
+                    )
                 )
             )
         );
@@ -229,19 +237,23 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
         // register operator
-        vm.startPrank(operator);
+        vm.startPrank(OPERATOR);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: address(0),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        eigenLayerContracts.delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.stopPrank();
 
         // set-up EigenLayer
         vm.prank(role.owner);
-        liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
+        liquidityPool.setEigenLayer(
+            address(eigenLayerContracts.strategyManager),
+            address(sfrxETHStrategy),
+            address(eigenLayerContracts.delegation)
+        );
     }
 
     function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {

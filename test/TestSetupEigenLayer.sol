@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { ERC20PresetFixedSupply } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+import { ERC20PresetFixedSupply, IERC20 } from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { IBeacon } from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
@@ -13,20 +13,26 @@ import { IETHPOSDeposit } from "@eigenlayer/contracts/interfaces/IETHPOSDeposit.
 
 import { StrategyManager } from "@eigenlayer/contracts/core/StrategyManager.sol";
 import { StrategyBase } from "@eigenlayer/contracts/strategies/StrategyBase.sol";
+import { IStrategy } from "@eigenlayer/contracts/interfaces/IStrategy.sol";
+
 import { Slasher } from "@eigenlayer/contracts/core/Slasher.sol";
 
-import { EigenPod } from "@eigenlayer/contracts/pods/EigenPod.sol";
+import { EigenPod, IEigenPod } from "@eigenlayer/contracts/pods/EigenPod.sol";
 import { EigenPodManager } from "@eigenlayer/contracts/pods/EigenPodManager.sol";
-import { DelayedWithdrawalRouter } from "@eigenlayer/contracts/pods/DelayedWithdrawalRouter.sol";
+import {
+    DelayedWithdrawalRouter,
+    IDelayedWithdrawalRouter
+} from "@eigenlayer/contracts/pods/DelayedWithdrawalRouter.sol";
 
 import { PauserRegistry } from "@eigenlayer/contracts/permissions/PauserRegistry.sol";
+import { ETHPOSDepositMock } from "@eigenlayer/test/mocks/ETHDepositMock.sol";
 
 import { EmptyContract } from "@eigenlayer/test/mocks/EmptyContract.sol";
 import { BeaconChainOracleMock } from "@eigenlayer/test/mocks/BeaconChainOracleMock.sol";
 
-import { vm } from "forge-std/Test.sol";
+import { Test, stdJson } from "forge-std/Test.sol";
 
-contract TestSetupEigenLayer is Test {
+contract TestSetupEigenLayer is Test, ETHPOSDepositMock {
     //Vm cheats = Vm(HEVM_ADDRESS);
 
     // EigenLayer contracts
@@ -42,7 +48,7 @@ contract TestSetupEigenLayer is Test {
         IETHPOSDeposit ethPOSDeposit;
         IBeacon eigenPodBeacon;
     }
-    EidenLayerContracts public eigenLayerContracts;
+    EigenLayerContracts public eigenLayerContracts;
 
     // testing/mock contracts
     struct MockContracts {
@@ -79,7 +85,7 @@ contract TestSetupEigenLayer is Test {
     }
     Addresses internal addresses;
 
-    // mapping(uint256 number => IStrategy strat) public strategies;
+    mapping(uint256 number => IStrategy strat) public strategies;
 
     //strategy indexes for undelegation (see commitUndelegation function)
     // uint256[] public strategyIndexes;
@@ -104,10 +110,11 @@ contract TestSetupEigenLayer is Test {
     uint64 public constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
     uint64 public constant GOERLI_GENESIS_TIME = 1616508000;
     // address public constant THE_MULTI_SIG = address(420);
-    // address public constant OPERATOR = address(0x4206904396bF2f8b173350ADdEc5007A52664293);
+    address public constant OPERATOR = address(0x4206904396bF2f8b173350ADdEc5007A52664293);
     // address public constant CHALLENGER = address(0x6966904396bF2f8b173350bCcec5007A52669873);
-    address public constant EIGEN_LAYER_REPUTED_MULTISIG = address(this);
     uint256 public constant INITIAL_BEACON_CHAIN_ORACLE_THRESHOLD = 3;
+    uint32 public constant PARTIAL_WITHDRAWAL_FRAUD_PROOF_PERIOD_BLOCKS = 7 days / 12 seconds;
+    address public EIGEN_LAYER_REPUTED_MULTISIG = address(this);
 
     string internal goerliDeploymentConfig;
     // = vm.readFile("script/output/goerli/M1_deployment_goerli_2023_3_23.json");
