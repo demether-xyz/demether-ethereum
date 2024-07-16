@@ -4,7 +4,7 @@
 openzeppelin/contracts=lib/openzeppelin-contracts/contracts/
 openzeppelin=lib/openzeppelin-contracts
 openzeppelin/proxy=lib/openzeppelin-contracts/contracts/proxy
-forge-std/src=lib/forge-std/src
+forge-std=lib/forge-std/src
 @openzeppelin/contracts/proxy/ERC1967=lib/openzeppelin-contracts/contracts/proxy/ERC1967
 openzeppelin/proxy/beacon=lib/openzeppelin-contracts/contracts/proxy/beacon
 @layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/
