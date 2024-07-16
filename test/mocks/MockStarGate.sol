@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {IOFT, SendParam, MessagingFee, MessagingReceipt, OFTReceipt} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import {
+    IOFT,
+    SendParam,
+    MessagingFee,
+    MessagingReceipt,
+    OFTReceipt
+} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 contract MockStarGate {
     uint256 internal constant PRECISION = 1e18;
@@ -44,7 +50,7 @@ contract MockStarGate {
         require(_amountLD - feeAmount >= _minAmountLD, "!slippage");
 
         address toAddress = decodeAddress(_toAddress);
-        (bool sent, ) = toAddress.call{value: _amountLD - feeAmount}("");
+        (bool sent, ) = toAddress.call{ value: _amountLD - feeAmount }("");
         require(sent, "Failed to send Ether");
     }
 
@@ -52,7 +58,11 @@ contract MockStarGate {
         SendParam calldata sendParam,
         MessagingFee calldata,
         address refundAddress
-    ) public payable returns (MessagingReceipt memory messagingReceipt, OFTReceipt memory oftReceipt, Ticket memory ticket) {
+    )
+        public
+        payable
+        returns (MessagingReceipt memory messagingReceipt, OFTReceipt memory oftReceipt, Ticket memory ticket)
+    {
         swapETH(
             uint16(sendParam.dstEid),
             payable(refundAddress),

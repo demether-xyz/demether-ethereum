@@ -13,18 +13,18 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import { FixedPointMathLib } from "solmate/utils/FixedPointMathLib.sol";
 
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IfrxETHMinter.sol";
 import "@frxETH/IsfrxETH.sol";
 
-import {IStrategyManager, IStrategy, IDelegationManager} from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
-import {ISignatureUtils} from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
+import { IStrategyManager, IStrategy, IDelegationManager } from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
+import { ISignatureUtils } from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
 
 import "forge-std/console.sol"; // todo remove
 /**
@@ -104,7 +104,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
         if (protocolAccruedFees > 0 && balance > 0) {
             uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
             protocolAccruedFees -= toPay;
-            (bool success, ) = protocolTreasury.call{value: toPay}("");
+            (bool success, ) = protocolTreasury.call{ value: toPay }("");
             if (!success) revert TransferFailed(protocolTreasury);
         }
 
@@ -177,7 +177,7 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     function _mintSfrxETH() internal {
         if (fraxMinter == address(0)) return;
 
-        IfrxETHMinter(fraxMinter).submitAndDeposit{value: address(this).balance}(address(this));
+        IfrxETHMinter(fraxMinter).submitAndDeposit{ value: address(this).balance }(address(this));
     }
 
     function setFraxMinter(address _fraxMinter) external onlyOwner {
@@ -207,11 +207,16 @@ contract LiquidityPool is Initializable, OwnableUpgradeable, UUPSUpgradeable, IL
     function delegateEigenLayer(address _operator) external onlyOwner {
         if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
-        IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
+        IDelegationManager(eigenLayerDelegationManager).delegateTo(
+            _operator,
+            ISignatureUtils.SignatureWithExpiry("", 0),
+            ""
+        );
     }
 
     function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
-        if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0)) revert InvalidAddress();
+        if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0))
+            revert InvalidAddress();
         if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
         if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();

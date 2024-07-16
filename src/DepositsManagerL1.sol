@@ -12,11 +12,13 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
@@ -82,7 +84,7 @@ contract DepositsManagerL1 is
 
     function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
-        wETH.deposit{value: address(this).balance}();
+        wETH.deposit{ value: address(this).balance }();
         amountOut = _deposit(msg.value);
     }
 
@@ -109,17 +111,20 @@ contract DepositsManagerL1 is
     /// @notice Adds into Liquidity Pool to start producing yield
     function addLiquidity() external whenNotPaused nonReentrant {
         wETH.withdraw(wETH.balanceOf(address(this)));
-        pool.addLiquidity{value: address(this).balance}();
+        pool.addLiquidity{ value: address(this).balance }();
     }
 
     /** SYNC with L2 **/
 
-    function syncRate(uint32[] calldata _chainId, uint256[] calldata _chainFee) external payable whenNotPaused nonReentrant {
+    function syncRate(
+        uint32[] calldata _chainId,
+        uint256[] calldata _chainFee
+    ) external payable whenNotPaused nonReentrant {
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            messenger.syncMessage{value: _chainFee[i]}(_chainId[i], data, msg.sender);
+            messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }
         if (msg.value < totalFees) revert InsufficientFee();

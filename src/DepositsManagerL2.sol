@@ -13,11 +13,13 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
@@ -82,7 +84,7 @@ contract DepositsManagerL2 is
 
     function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
-        wETH.deposit{value: address(this).balance}();
+        wETH.deposit{ value: address(this).balance }();
         amountOut = _deposit(msg.value);
     }
 
@@ -111,7 +113,7 @@ contract DepositsManagerL2 is
     function syncTokens() external payable whenNotPaused nonReentrant {
         uint256 amount = wETH.balanceOf(address(this));
         if (amount == 0) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, amount, msg.sender);
+        messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, amount, msg.sender);
     }
 
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
