@@ -33,4 +33,4 @@
 	url = https://github.com/FraxFinance/LayerZero-v2-upgradeable
 [submodule "lib/solmate"]
 	path = lib/solmate
-	url = https://github.com/trantransmissions11/solmate
+	url = https://github.com/transmissions11/solmate

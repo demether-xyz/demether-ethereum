@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // *******************************************************
@@ -12,17 +13,19 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import "./interfaces/IDOFT.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/ILiquidityPool.sol";
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IDepositsManager.sol";
+import { IDOFT } from "./interfaces/IDOFT.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
 
 /**
  * @title L1 Deposits Manager
@@ -42,6 +45,14 @@ contract DepositsManagerL1 is
     UUPSUpgradeable,
     IDepositsManager
 {
+    // Custom errors
+    error DepositFailed(address sender, uint256 amount);
+    error NativeTokenNotSupported();
+    error ZeroAmount();
+    error TokenMintFailed(address tokenReceiver, uint256 amount);
+    error ImplementationIsNotContract(address newImplementation);
+    error NotImplemented();
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
@@ -76,25 +87,27 @@ contract DepositsManagerL1 is
     }
 
     function deposit(uint256 _amountIn) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn);
     }
 
     function depositETH() external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
-        wETH.deposit{value: address(this).balance}();
+        if (!nativeSupport) revert NativeTokenNotSupported();
+        wETH.deposit{ value: address(this).balance }();
         amountOut = _deposit(msg.value);
     }
 
     function _deposit(uint256 _amountIn) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
+        if (_amountIn == 0) revert ZeroAmount();
         amountOut = getConversionAmount(_amountIn);
         emit Deposit(msg.sender, _amountIn, amountOut);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+        if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
     }
 
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
-        uint256 depositFee = 0; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
+        uint256 depositFee = 0;
+        // TODO create system for fees setting
+        // depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 rate = getRate();
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
@@ -109,17 +122,20 @@ contract DepositsManagerL1 is
     /// @notice Adds into Liquidity Pool to start producing yield
     function addLiquidity() external whenNotPaused nonReentrant {
         wETH.withdraw(wETH.balanceOf(address(this)));
-        pool.addLiquidity{value: address(this).balance}();
+        pool.addLiquidity{ value: address(this).balance }();
     }
 
     /** SYNC with L2 **/
 
-    function syncRate(uint32[] calldata _chainId, uint256[] calldata _chainFee) external payable whenNotPaused nonReentrant {
+    function syncRate(
+        uint32[] calldata _chainId,
+        uint256[] calldata _chainFee
+    ) external payable whenNotPaused nonReentrant {
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            messenger.syncMessage{value: _chainFee[i]}(_chainId[i], data, msg.sender);
+            messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }
         if (msg.value < totalFees) revert InsufficientFee();
@@ -127,7 +143,7 @@ contract DepositsManagerL1 is
 
     function onMessageReceived(uint32, bytes calldata) external nonReentrant {
         //        if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
-        revert("not implemented");
+        revert NotImplemented();
     }
 
     /** OTHER **/
@@ -158,6 +174,6 @@ contract DepositsManagerL1 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

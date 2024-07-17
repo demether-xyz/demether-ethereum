@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import { Script } from "lib/forge-std/src/Script.sol";
 import { DOFT } from "../src/DOFT.sol";
 
-import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol"; 
+import { ERC1967Proxy } from "lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployDOFT is Script {
     function run() external {

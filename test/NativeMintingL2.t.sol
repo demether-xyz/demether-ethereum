@@ -1,32 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "./TestSetup.sol";
+import { TestSetup } from "./TestSetup.sol";
 
 contract NativeMintingL2 is TestSetup {
-    function test_L2_minting_rate() public view {
+    function testL2MintingRate() public view {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
         assertEq(amountOut, 99.9 ether);
     }
 
-    function test_L2_deposit_weth() public {
+    function testL2DepositWeth() public {
         uint256 amount = 100 ether;
-        wETHL2.deposit{value: amount}();
+        wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
         depositsManagerL2.deposit(amount);
         assertEq(wETHL2.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
     }
 
-    function test_L2_deposit_eth() public {
+    function testL2DepositEth() public {
         vm.expectRevert("Native token not supported");
-        depositsManagerL2.depositETH{value: 100 ether}();
+        depositsManagerL2.depositETH{ value: 100 ether }();
     }
 
-    function test_L2_sync_tokens() public {
+    function testL2SyncTokens() public {
         // deposit L2
         uint256 amount = 100 ether;
-        wETHL2.deposit{value: amount}();
+        wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
         depositsManagerL2.deposit(amount);
         // 0.1% fee captured to cover slippage
@@ -34,7 +34,7 @@ contract NativeMintingL2 is TestSetup {
 
         // sync tokens to L1 and receive less
         uint256 fee = 10 gwei;
-        depositsManagerL2.syncTokens{value: fee}();
+        depositsManagerL2.syncTokens{ value: fee }();
         assertEq(wETHL2.balanceOf(address(depositsManagerL2)), 0);
 
         // 0.2% paid to the router
@@ -42,13 +42,13 @@ contract NativeMintingL2 is TestSetup {
     }
 
     /// @dev Slippage cost higher than fee, creates a whole
-    function test_L2_high_slippage() public {
+    function testL2HighSlippage() public {
         // initialize the rate on L1
-        depositsManagerL1.depositETH{value: 100 ether}();
+        depositsManagerL1.depositETH{ value: 100 ether }();
         depositsManagerL1.addLiquidity();
         assertEq(depositsManagerL1.getRate(), 1 ether);
 
-        test_L2_sync_tokens();
+        testL2SyncTokens();
         depositsManagerL1.addLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
@@ -60,7 +60,7 @@ contract NativeMintingL2 is TestSetup {
         assertEq(missingETH, 0.1 ether);
 
         // add surplus to cover the gap
-        wETHL1.deposit{value: 1 ether}();
+        wETHL1.deposit{ value: 1 ether }();
         wETHL1.transfer(address(depositsManagerL1), 1 ether);
         depositsManagerL1.addLiquidity();
 
@@ -71,24 +71,24 @@ contract NativeMintingL2 is TestSetup {
     }
 
     /// @dev Rewards increase higher than rate creates a whole
-    function test_L2_high_rewards() public {
+    function testL2HighRewards() public {
         stargateL2.setSlippage(0);
 
         // initialize the rate on L1 + add rewards
-        depositsManagerL1.depositETH{value: 100 ether}();
+        depositsManagerL1.depositETH{ value: 100 ether }();
         depositsManagerL1.addLiquidity();
         _rewards(10 ether);
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
 
         // deposit L2 at 1.0 rate, sync not happened yet / or bridge while rate went up
         uint256 amount = 100 ether;
-        wETHL2.deposit{value: amount}();
+        wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
         depositsManagerL2.deposit(amount);
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether); // mints more than should
 
-        depositsManagerL2.syncTokens{value: 10 gwei}();
+        depositsManagerL2.syncTokens{ value: 10 gwei }();
         assertEq(address(depositsManagerL1).balance, 100 ether);
         depositsManagerL1.addLiquidity();
 
