@@ -34,7 +34,8 @@ contract NativeMintingL2 is TestSetup {
 
         // sync tokens to L1 and receive less
         uint256 fee = 10 gwei;
-        depositsManagerL2.syncTokens{value: fee}();
+        uint256 balance = wETHL2.balanceOf(address(depositsManagerL2));
+        depositsManagerL2.syncTokens{value: fee}(balance);
         assertEq(wETHL2.balanceOf(address(depositsManagerL2)), 0);
 
         // 0.2% paid to the router
@@ -88,7 +89,8 @@ contract NativeMintingL2 is TestSetup {
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether); // mints more than should
 
-        depositsManagerL2.syncTokens{value: 10 gwei}();
+        uint256 balance = wETHL2.balanceOf(address(depositsManagerL2));
+        depositsManagerL2.syncTokens{value: 10 gwei}(balance);
         assertEq(address(depositsManagerL1).balance, 100 ether);
         depositsManagerL1.addLiquidity();
 
