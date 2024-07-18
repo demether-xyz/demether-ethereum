@@ -159,6 +159,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         // L2
         depositsManagerL2.setToken(address(l2token));
         depositsManagerL2.setMessenger(address(messengerL2));
+        depositsManagerL2.setDepositFee(1e15); // 0.1%
 
         _bridgeIds = new uint8[](2);
         _routers = new address[](2);

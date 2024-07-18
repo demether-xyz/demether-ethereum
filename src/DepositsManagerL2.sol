@@ -55,6 +55,9 @@ contract DepositsManagerL2 is
     /// @notice Chain native token is ETH
     bool private nativeSupport;
 
+    /// @notice Deposit fee in 1e18 precision to cover gas and slippage
+    uint256 public depositFee;
+
     /// @notice Exchange rate from L1
     uint256 private rate;
 
@@ -96,7 +99,6 @@ contract DepositsManagerL2 is
 
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
-        uint256 depositFee = 1e15; // TODO create system for fees setting, depositFee Deposit fee, in 1e18 precision (e.g. 1e16 for 1% fee)
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
@@ -130,6 +132,13 @@ contract DepositsManagerL2 is
     }
 
     /** OTHER **/
+
+    // TODO change to service modifier
+    function setDepositFee(uint256 _fee) external onlyOwner {
+        require(_fee < PRECISION, "Invalid fee");
+        depositFee = _fee;
+        emit DepositFeeSet(_fee);
+    }
 
     function setToken(address _token) external onlyOwner {
         require(_token != address(0), "Invalid token");
