@@ -17,3 +17,4 @@ solidity-bytes-utils/contracts=lib/solidity-bytes-utils/contracts
 @eigenlayer=lib/eigenlayer-contracts/src
 solmate/utils=lib/solmate/src/utils
 solmate/mixins=lib/frxETH-public/lib/solmate/src/mixins
+@fraxfinance=lib/LayerZero-v2-upgradeable/oapp/contracts/oft

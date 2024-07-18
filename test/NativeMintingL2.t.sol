@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import { TestSetup } from "./TestSetup.sol";
 import { IDepositsManager } from "../src/interfaces/IDepositsManager.sol";
+import { DepositsManagerL2 } from "../src/DepositsManagerL2.sol";
 
 contract DepositManagerL2Test is TestSetup {
     event Paused(address account);

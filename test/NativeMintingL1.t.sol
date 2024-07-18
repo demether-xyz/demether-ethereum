@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import { TestSetup } from "./TestSetup.sol";
 import { IDepositsManager } from "../src/interfaces/IDepositsManager.sol";
+import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 
 contract DepositManagerL1Test is TestSetup {
     event Paused(address account);
@@ -161,7 +162,7 @@ contract SyncRateL1Test is DepositManagerL1Test {
     function setUp() public virtual override {
         super.setUp();
         fee = 10 gwei;
-        _chainId1[0] = l2Eid;
+        _chainId1[0] = L2_EID;
         _chainFee1[0] = fee;
     }
 
