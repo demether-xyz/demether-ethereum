@@ -111,10 +111,10 @@ contract DepositsManagerL2 is
 
     /** SYNC with L1 **/
 
-    function syncTokens() external payable whenNotPaused nonReentrant {
-        uint256 amount = wETH.balanceOf(address(this));
-        if (amount == 0) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, amount, msg.sender);
+    /// @notice Sync tokens specifying amount to transfer to limit slippage
+    function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
+        if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
+        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
