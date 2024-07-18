@@ -26,6 +26,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
     address internal admin;
     address internal owner;
+    address internal service;
     ProxyTester internal proxy = new ProxyTester();
     bytes internal data;
 
@@ -76,7 +77,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         wETHL1 = new WETH();
 
         // deploy DepositsManagerL1.sol
-        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL1), owner, true);
+        data = abi.encodeWithSignature("initialize(address,address,address,bool)", address(wETHL1), owner, service, true);
         depositsManagerL1 = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), admin, data)));
         vm.label(address(depositsManagerL1), "depositsManagerL1");
 
@@ -85,12 +86,18 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(l1token), "l1token");
 
         // deploy LiquidityPool
-        data = abi.encodeWithSignature("initialize(address,address)", address(depositsManagerL1), owner);
+        data = abi.encodeWithSignature("initialize(address,address,address)", address(depositsManagerL1), owner, service);
         liquidityPool = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), admin, data)));
         vm.label(address(liquidityPool), "liquidityPool");
 
         // deploy Messenger
-        data = abi.encodeWithSignature("initialize(address,address,address)", address(wETHL1), address(depositsManagerL1), owner);
+        data = abi.encodeWithSignature(
+            "initialize(address,address,address,address)",
+            address(wETHL1),
+            address(depositsManagerL1),
+            owner,
+            service
+        );
         messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
         vm.label(address(messengerL1), "messengerL1");
     }
@@ -100,7 +107,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         stargateL2 = new MockStarGate();
 
         // deploy DepositsManagerL2.sol
-        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), owner, false);
+        data = abi.encodeWithSignature("initialize(address,address,address,bool)", address(wETHL2), owner, service, false);
         depositsManagerL2 = DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), admin, data)));
         vm.label(address(depositsManagerL2), "depositsManagerL2");
 
@@ -109,7 +116,13 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(l2token), "l2token");
 
         // deploy Messenger
-        data = abi.encodeWithSignature("initialize(address,address,address)", address(wETHL2), address(depositsManagerL2), owner);
+        data = abi.encodeWithSignature(
+            "initialize(address,address,address,address)",
+            address(wETHL2),
+            address(depositsManagerL2),
+            owner,
+            service
+        );
         messengerL2 = Messenger(payable(proxy.deploy(address(new Messenger()), admin, data)));
         vm.label(address(messengerL2), "messengerL2");
     }
@@ -219,6 +232,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         owner = vm.addr(uint256(0x456));
         vm.label(owner, "Owner");
+
+        service = vm.addr(uint256(0x789));
+        vm.label(owner, "Service");
 
         _setUp_L1();
         _setUp_L2();

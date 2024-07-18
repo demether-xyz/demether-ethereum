@@ -22,7 +22,7 @@ contract TimeLockTest is TestSetup {
 
     function test_timeLock() public {
         vm.prank(owner);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("Caller is not service");
         depositsManagerL1.pause();
 
         vm.prank(address(timeLock));

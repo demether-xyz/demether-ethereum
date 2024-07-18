@@ -14,7 +14,6 @@ pragma solidity ^0.8.26;
 // Juan C. Dorado: https://github.com/jdorado/
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -23,6 +22,7 @@ import "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IDepositsManager.sol";
+import "./OwnableAccessControl.sol";
 import "forge-std/console.sol"; // todo remove
 /**
  * @title L2 Deposits Manager
@@ -32,7 +32,7 @@ import "forge-std/console.sol"; // todo remove
  */
 contract DepositsManagerL2 is
     Initializable,
-    OwnableUpgradeable,
+    OwnableAccessControl,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable,
@@ -61,7 +61,7 @@ contract DepositsManagerL2 is
     /// @notice Rate block
     uint256 public rateSyncBlock;
 
-    function initialize(address _wETH, address _owner, bool _nativeSupport) external initializer onlyProxy {
+    function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         require(_wETH != address(0), "Invalid wETH");
 
         __Ownable_init();
@@ -72,6 +72,7 @@ contract DepositsManagerL2 is
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
 
+        setService(_service);
         transferOwnership(_owner);
     }
 
@@ -141,11 +142,11 @@ contract DepositsManagerL2 is
         wETH.approve(_messenger, type(uint256).max);
     }
 
-    function pause() external onlyOwner whenNotPaused {
+    function pause() external onlyService whenNotPaused {
         _pause();
     }
 
-    function unpause() external onlyOwner whenPaused {
+    function unpause() external onlyService whenPaused {
         _unpause();
     }
 
