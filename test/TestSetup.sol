@@ -43,8 +43,6 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
     Role internal role;
 
-    address internal admin;
-    address internal owner;
     address public bob = makeAddr("bob");
 
     ProxyTester internal proxy = new ProxyTester();
@@ -237,8 +235,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         IStrategy[] memory _strategy = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = sfrxETHStrategy;
-        vm.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        // TODO : commented temporary
+        // vm.prank(strategyManager.strategyWhitelister());
+        // strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
         // register operator
         vm.startPrank(OPERATOR);

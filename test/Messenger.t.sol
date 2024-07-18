@@ -12,7 +12,7 @@ contract MessengerTest is TestSetup {
 
 contract SyncTokensTest is MessengerTest {
     function test_RevertWhenSyncTokensCallerIsNotAuthorised() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.Unauthorized.selector);
         messengerL1.syncTokens(0, 0, address(bob));
         vm.stopPrank();
@@ -21,7 +21,7 @@ contract SyncTokensTest is MessengerTest {
 
 contract SyncMessageTest is MessengerTest {
     function test_RevertWhenSyncMessageCallerIsNotAuthorised() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.Unauthorized.selector);
         messengerL1.syncMessage(0, bytes(""), address(bob));
         vm.stopPrank();
@@ -63,7 +63,7 @@ contract SetRoutersTest is MessengerTest {
         uint8[] memory _bridgeIds = new uint8[](2);
         address[] memory _routers = new address[](1);
 
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.InvalidParametersLength.selector);
         messengerL1.setRouters(_bridgeIds, _routers, address(bob));
         vm.stopPrank();
@@ -73,7 +73,7 @@ contract SetRoutersTest is MessengerTest {
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
 
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.InvalidAddress.selector);
         messengerL1.setRouters(_bridgeIds, _routers, address(bob));
         vm.stopPrank();
@@ -85,7 +85,7 @@ contract SetRoutersTest is MessengerTest {
 
         _routers[0] = address(bob);
         _bridgeIds[0] = 1;
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.InvalidAddress.selector);
         messengerL1.setRouters(_bridgeIds, _routers, address(0));
         vm.stopPrank();

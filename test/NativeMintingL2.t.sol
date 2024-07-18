@@ -30,7 +30,7 @@ contract NativeMintingL2 is DepositManagerL2Test {
     }
 
     function testL2DepositEth() public {
-        vm.expectRevert("Native token not supported");
+        vm.expectRevert(DepositsManagerL2.NativeTokenNotSupported.selector);
         depositsManagerL2.depositETH{ value: 100 ether }();
     }
 
@@ -115,7 +115,7 @@ contract NativeMintingL2 is DepositManagerL2Test {
 
 contract DepositTestL2 is DepositManagerL2Test {
     function test_RevertWhenContractIsPaused() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
@@ -124,8 +124,8 @@ contract DepositTestL2 is DepositManagerL2Test {
     }
 
     function test_RevertWhenL1NotApprovedForUsingWETH() external {
-        vm.startPrank(owner);
-        vm.expectRevert(bytes("Amount in zero"));
+        vm.startPrank(role.owner);
+        vm.expectRevert(DepositsManagerL2.ZeroAmount.selector);
         depositsManagerL2.deposit(0);
         vm.stopPrank();
     }
@@ -133,7 +133,7 @@ contract DepositTestL2 is DepositManagerL2Test {
 
 contract DepositETHTestL2 is DepositManagerL2Test {
     function test_RevertWhenContractIsPaused() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
@@ -142,20 +142,20 @@ contract DepositETHTestL2 is DepositManagerL2Test {
     }
 
     function test_RevertWhenNativeTokenNotSupported() external {
-        vm.startPrank(owner);
-        vm.expectRevert(bytes("Native token not supported"));
+        vm.startPrank(role.owner);
+        vm.expectRevert(DepositsManagerL2.NativeTokenNotSupported.selector);
         depositsManagerL2.depositETH();
         vm.stopPrank();
     }
 
     function test_RevertWhenPassedZeroETH() external {
-        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), owner, true);
+        data = abi.encodeWithSignature("initialize(address,address,bool)", address(wETHL2), role.owner, true);
         DepositsManagerL2 depositsManager =
-            DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), admin, data)));
+            DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), role.admin, data)));
 
-        vm.startPrank(owner);
-        vm.expectRevert(bytes("Amount in zero"));
-        depositsManagerL1.depositETH();
+        vm.startPrank(role.owner);
+        vm.expectRevert(DepositsManagerL2.ZeroAmount.selector);
+        depositsManager.depositETH();
         vm.stopPrank();
     }
 }
@@ -168,7 +168,7 @@ contract GetRateL2Test is DepositManagerL2Test {
 
 contract SyncTokensTest is DepositManagerL2Test {
     function test_RevertWhenContractIsPaused() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.pause();
         vm.stopPrank();
 
@@ -191,7 +191,7 @@ contract OnMessageReceivedL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenCalledByWrongChainId() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.setMessenger(address(bob));
         vm.stopPrank();
 
@@ -202,7 +202,7 @@ contract OnMessageReceivedL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenPassedInvalidMSG() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.setMessenger(address(bob));
         vm.stopPrank();
 
@@ -215,7 +215,7 @@ contract OnMessageReceivedL2Test is DepositManagerL2Test {
 
 contract SetTokenL2Test is DepositManagerL2Test {
     function test_SetTokenShouldWorkCorrectly() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         assertEq(address(depositsManagerL2.token()), address(l2token));
 
         depositsManagerL2.setToken(address(bob));
@@ -232,7 +232,7 @@ contract SetTokenL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IDepositsManager.InvalidAddress.selector);
         depositsManagerL2.setToken(address(0));
         vm.stopPrank();
@@ -241,7 +241,7 @@ contract SetTokenL2Test is DepositManagerL2Test {
 
 contract SetMessengerL2Test is DepositManagerL2Test {
     function test_SetMessengerShouldWorkCorrectly() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         assertEq(address(depositsManagerL2.messenger()), address(messengerL2));
         assertEq(wETHL2.allowance(address(depositsManagerL2), address(messengerL2)), type(uint256).max);
         assertEq(wETHL2.allowance(address(depositsManagerL2), address(bob)), 0);
@@ -261,7 +261,7 @@ contract SetMessengerL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(IDepositsManager.InvalidAddress.selector);
         depositsManagerL2.setMessenger(address(0));
         vm.stopPrank();
@@ -270,10 +270,10 @@ contract SetMessengerL2Test is DepositManagerL2Test {
 
 contract PauseL2Test is DepositManagerL2Test {
     function test_PauseShouldWorkCorrectly() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         assertEq(depositsManagerL2.paused(), false);
         vm.expectEmit(true, true, true, true, address(depositsManagerL2));
-        emit Paused(address(owner));
+        emit Paused(address(role.owner));
         depositsManagerL2.pause();
         assertEq(depositsManagerL2.paused(), true);
         vm.stopPrank();
@@ -287,7 +287,7 @@ contract PauseL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenAlreadyPaused() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
@@ -298,11 +298,11 @@ contract PauseL2Test is DepositManagerL2Test {
 
 contract UnpauseL2Test is DepositManagerL2Test {
     function test_UnpauseShouldWorkCorrectly() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         depositsManagerL2.pause();
         assertEq(depositsManagerL2.paused(), true);
         vm.expectEmit(true, true, true, true, address(depositsManagerL2));
-        emit Unpaused(address(owner));
+        emit Unpaused(address(role.owner));
         depositsManagerL2.unpause();
         assertEq(depositsManagerL2.paused(), false);
         vm.stopPrank();
@@ -316,7 +316,7 @@ contract UnpauseL2Test is DepositManagerL2Test {
     }
 
     function test_RevertWhenNotPaused() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(bytes("Pausable: not paused"));
         depositsManagerL2.unpause();
         vm.stopPrank();

@@ -12,7 +12,7 @@ contract LiquidityPoolTest is TestSetup {
 
 contract AddLiquidityTest is LiquidityPoolTest {
     function test_RevertWhenAddLiquidityCallerIsNotAuthorised() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.Unauthorized.selector);
         liquidityPool.addLiquidity();
         vm.stopPrank();
@@ -28,7 +28,7 @@ contract SetFraxMinterTest is LiquidityPoolTest {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
         liquidityPool.setFraxMinter(address(0));
         vm.stopPrank();
@@ -44,7 +44,7 @@ contract DelegateEigenLayerTest is LiquidityPoolTest {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
         liquidityPool.delegateEigenLayer(address(0));
         vm.stopPrank();
@@ -60,7 +60,7 @@ contract SetEigenLayerTest is LiquidityPoolTest {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
         liquidityPool.setEigenLayer(address(0), address(bob), address(bob));
 
@@ -82,7 +82,7 @@ contract SetProtocolFeeTest is LiquidityPoolTest {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidFee.selector);
         liquidityPool.setProtocolFee(1 ether);
         vm.stopPrank();
@@ -98,7 +98,7 @@ contract SetProtocolTreasuryTest is LiquidityPoolTest {
     }
 
     function test_RevertWhenPassedZeroAddress() external {
-        vm.startPrank(owner);
+        vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
         liquidityPool.setProtocolTreasury(address(0));
         vm.stopPrank();
