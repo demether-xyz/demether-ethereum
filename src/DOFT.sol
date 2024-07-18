@@ -17,25 +17,46 @@ import {OFTUpgradeable} from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contracts
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+    address private _minter;
+
     /// @notice Constructor with LayerZero endpoint.
     constructor(address _lzEndpoint) OFTUpgradeable(_lzEndpoint) {}
 
-    /// @notice Initializes the DOFT.sol.sol contract.
+    /// @notice Checks if the caller is the designated minter.
+    modifier onlyMinter() {
+        require(msg.sender == _minter, "Caller is not the minter");
+        _;
+    }
+
+    /// @notice Initializes the DOFT.sol contract.
     /// @param _name The name of the token.
     /// @param _symbol The symbol of the token.
     /// @param _delegate The address to transfer ownership to.
-    function initialize(string memory _name, string memory _symbol, address _delegate) external initializer onlyProxy {
+    /// @param _minterAddress The address of the minter.
+    function initialize(
+        string memory _name,
+        string memory _symbol,
+        address _delegate,
+        address _minterAddress
+    ) external initializer onlyProxy {
         __OFT_init(_name, _symbol, _delegate);
         __Ownable_init();
         _transferOwnership(_delegate);
+        _minter = _minterAddress; // Set the minter
     }
 
-    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
+    /// @notice Mints tokens to the specified address.
+    /// @param _to Address to mint tokens to.
+    /// @param _amount The amount of tokens to mint.
+    function mint(address _to, uint256 _amount) external onlyMinter returns (bool) {
         _mint(_to, _amount);
         return true;
     }
 
-    function burn(address _from, uint256 _amount) external onlyOwner returns (bool) {
+    /// @notice Burns tokens from the specified address.
+    /// @param _from Address from which tokens will be burned.
+    /// @param _amount The amount of tokens to burn.
+    function burn(address _from, uint256 _amount) external onlyMinter returns (bool) {
         _burn(_from, _amount);
         return true;
     }

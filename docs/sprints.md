@@ -22,10 +22,6 @@
 - Canonical bridge for L2 specific
 
 ## Backlog
-- Determine fees settings system
-- Fees: deposit, withdrawals to cover bridging costs
-- Limits on batches sending
-- OFT to upgradable token
 - Revise StarGate v2 with docs
 - EigenLayer delegate into a single operator
 - Pause contract if rate is stale
