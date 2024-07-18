@@ -82,7 +82,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(depositsManagerL1), "depositsManagerL1");
 
         // token
-        l1token = new DOFT("", "", address(endpoints[l1Eid]), address(depositsManagerL1));
+        data = abi.encodeWithSignature("initialize(string,string,address)", "Token Name", "Token Symbol", address(depositsManagerL1)); // todo
+        l1token = DOFT(payable(proxy.deploy(address(new DOFT(address(endpoints[l1Eid]))), admin, data)));
         vm.label(address(l1token), "l1token");
 
         // deploy LiquidityPool
@@ -112,7 +113,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         vm.label(address(depositsManagerL2), "depositsManagerL2");
 
         // deploy token
-        l2token = new DOFT("", "", address(endpoints[l2Eid]), address(depositsManagerL2));
+        data = abi.encodeWithSignature("initialize(string,string,address)", "Token Name", "Token Symbol", address(depositsManagerL2)); // todo
+        l2token = DOFT(payable(proxy.deploy(address(new DOFT(address(endpoints[l2Eid]))), admin, data)));
         vm.label(address(l2token), "l2token");
 
         // deploy Messenger

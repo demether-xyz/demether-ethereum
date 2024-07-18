@@ -13,26 +13,20 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {OFT} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
+import {OFTUpgradeable} from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contracts/oft/OFTUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-/*
-TODO
-    Make Upgradable using pattern https://blastscan.io/address/0x20ee00f43ef299dba82ba6fef537756dabe38cc7#code
-    Determine ownership flow
-*/
+contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+    /// @notice Constructor with LayerZero endpoint.
+    constructor(address _lzEndpoint) OFTUpgradeable(_lzEndpoint) {}
 
-contract DOFT is OFT {
     /// @notice Initializes the DOFT.sol.sol contract.
     /// @param _name The name of the token.
     /// @param _symbol The symbol of the token.
-    /// @param _lzEndpoint The LayerZero endpoint address.
     /// @param _delegate The address to transfer ownership to.
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _lzEndpoint,
-        address _delegate
-    ) OFT(_name, _symbol, _lzEndpoint, _delegate) {
+    function initialize(string memory _name, string memory _symbol, address _delegate) external initializer onlyProxy {
+        __OFT_init(_name, _symbol, _delegate);
+        __Ownable_init();
         _transferOwnership(_delegate);
     }
 
@@ -44,5 +38,9 @@ contract DOFT is OFT {
     function burn(address _from, uint256 _amount) external onlyOwner returns (bool) {
         _burn(_from, _amount);
         return true;
+    }
+
+    function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
+        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
     }
 }
