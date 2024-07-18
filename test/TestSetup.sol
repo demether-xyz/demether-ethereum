@@ -200,7 +200,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
         messengerL2.setSettingsTokens(l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, ""));
 
-        // todo set token peers >> test L1 to L2 transfers
+        // set token peers >> test L1 to L2 transfers
+        l1token.setPeer(l2Eid, addressToBytes32(address(l2token)));
+        l2token.setPeer(l1Eid, addressToBytes32(address(l1token)));
+
         vm.stopPrank();
     }
 
