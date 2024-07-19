@@ -13,14 +13,26 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{value: amount}();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         assertEq(wETHL2.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
     }
 
     function test_L2_deposit_eth() public {
         vm.expectRevert("Native token not supported");
-        depositsManagerL2.depositETH{value: 100 ether}(address(0));
+        depositsManagerL2.depositETH{value: 100 ether}(0, 0, address(0));
+    }
+
+    function test_L2_bridged_deposit_weth() public {
+        uint256 fee = 100;
+        uint256 amount = 100 ether;
+        wETHL2.deposit{value: amount}();
+        wETHL2.approve(address(depositsManagerL2), amount);
+        depositsManagerL2.deposit{value: fee}(amount, l1Eid, fee, address(0));
+        assertEq(l2token.balanceOf(address(this)), 0);
+        assertEq(l2token.balanceOf(address(depositsManagerL1)), 0);
+        verifyPackets(l1Eid, addressToBytes32(address(l1token)));
+        assertEq(l1token.balanceOf(address(this)), 99.9 ether);
     }
 
     function test_L2_sync_tokens() public {
@@ -28,7 +40,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{value: amount}();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
 
@@ -85,7 +97,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{value: amount}();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether); // mints more than should
 
