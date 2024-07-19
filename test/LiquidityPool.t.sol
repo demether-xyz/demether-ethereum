@@ -74,6 +74,16 @@ contract SetEigenLayerTest is LiquidityPoolTest {
 }
 
 contract SetProtocolFeeTest is LiquidityPoolTest {
+    function test_SetProtocolFeeShouldWorkCorrectly() external {
+        vm.startPrank(role.owner);
+        assertEq(liquidityPool.protocolFee(), 1e17);
+
+        liquidityPool.setProtocolFee(100 gwei);
+
+        assertEq(liquidityPool.protocolFee(), 100 gwei);
+        vm.stopPrank();
+    }
+
     function test_RevertWhenSetProtocolFeeCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -90,6 +100,16 @@ contract SetProtocolFeeTest is LiquidityPoolTest {
 }
 
 contract SetProtocolTreasuryTest is LiquidityPoolTest {
+    function test_SetProtocolTreasuryShouldWorkCorrectly() external {
+        vm.startPrank(role.owner);
+        assertEq(address(liquidityPool.protocolTreasury()), address(role.owner));
+
+        liquidityPool.setProtocolTreasury(address(bob));
+
+        assertEq(address(liquidityPool.protocolTreasury()), address(bob));
+        vm.stopPrank();
+    }
+
     function test_RevertWhenSetProtocolTreasuryCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
