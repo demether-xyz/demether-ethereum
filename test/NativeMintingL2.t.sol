@@ -45,7 +45,7 @@ contract NativeMintingL2 is TestSetup {
     /// @dev Slippage cost higher than fee, creates a whole
     function test_L2_high_slippage() public {
         // initialize the rate on L1
-        depositsManagerL1.depositETH{value: 100 ether}(address(0));
+        depositsManagerL1.depositETH{value: 100 ether}(0, 0, address(0));
         depositsManagerL1.addLiquidity();
         assertEq(depositsManagerL1.getRate(), 1 ether);
 
@@ -76,7 +76,7 @@ contract NativeMintingL2 is TestSetup {
         stargateL2.setSlippage(0);
 
         // initialize the rate on L1 + add rewards
-        depositsManagerL1.depositETH{value: 100 ether}(address(0));
+        depositsManagerL1.depositETH{value: 100 ether}(0, 0, address(0));
         depositsManagerL1.addLiquidity();
         _rewards(10 ether);
         assertEq(depositsManagerL1.getRate(), 1.09 ether);

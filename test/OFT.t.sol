@@ -10,7 +10,7 @@ contract OFTTest is TestSetup {
 
     function test_OFT_bridge() public {
         // deposit L1
-        depositsManagerL1.depositETH{value: 100 ether}(address(0));
+        depositsManagerL1.depositETH{value: 100 ether}(0, 0, address(0));
         assertEq(l1token.balanceOf(address(this)), 100 ether);
 
         // bridge to L2

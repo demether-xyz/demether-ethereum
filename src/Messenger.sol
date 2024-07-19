@@ -141,6 +141,10 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         }
     }
 
+    function getMessageSettings(uint32 chainId) external view returns (Settings memory) {
+        return settings_messages[chainId];
+    }
+
     /** LAYER ZERO **/
 
     function _sync_LayerZero(Settings memory _settings, address _router, bytes calldata _data, address _refund) internal {

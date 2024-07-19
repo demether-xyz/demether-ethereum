@@ -30,6 +30,8 @@ interface IMessenger {
 
     function syncMessage(uint32 chainId, bytes calldata data, address refund) external payable;
 
+    function getMessageSettings(uint32 chainId) external view returns (Settings memory);
+
     event SettingsTokens(uint32 indexed chainId, uint8 bridgeId, address toAddress);
     event SettingsMessages(uint32 indexed chainId, uint8 bridgeId, address toAddress);
 }

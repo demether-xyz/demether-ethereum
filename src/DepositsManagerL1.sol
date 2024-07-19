@@ -16,13 +16,16 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
-import "./interfaces/IDOFT.sol";
+import {IDOFT, SendParam, MessagingFee} from "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/ILiquidityPool.sol";
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IDepositsManager.sol";
 import "./OwnableAccessControl.sol";
+
+import "forge-std/console.sol"; // todo remove
 
 /**
  * @title L1 Deposits Manager
@@ -42,6 +45,8 @@ contract DepositsManagerL1 is
     UUPSUpgradeable,
     IDepositsManager
 {
+    using OptionsBuilder for bytes;
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
@@ -76,22 +81,64 @@ contract DepositsManagerL1 is
         transferOwnership(_owner);
     }
 
-    function deposit(uint256 _amountIn, address _referral) external whenNotPaused nonReentrant returns (uint256 amountOut) {
+    function deposit(
+        uint256 _amountIn,
+        uint32 _chainId,
+        uint256 _fee,
+        address _referral
+    ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
-        amountOut = _deposit(_amountIn, _referral);
+        amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
-    function depositETH(address _referral) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
+    function depositETH(
+        uint32 _chainId,
+        uint256 _fee,
+        address _referral
+    ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
-        wETH.deposit{value: address(this).balance}();
-        amountOut = _deposit(msg.value, _referral);
+        uint256 amountIn = msg.value - _fee;
+        wETH.deposit{value: address(this).balance - _fee}();
+        amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
-    function _deposit(uint256 _amountIn, address _referral) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
-        amountOut = getConversionAmount(_amountIn);
-        emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+    function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
+        if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
+
+        // Mints Locally or mints and sends to a supported chain
+        if (_chainId == 0) {
+            amountOut = getConversionAmount(_amountIn);
+            if (amountOut == 0) revert InvalidAmount();
+            emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+            require(token.mint(msg.sender, amountOut), "Token minting failed");
+        } else {
+            // get settings for chain ensuring it's set
+            IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
+            if (settings.bridgeChainId == 0) revert InvalidChainId();
+
+            amountOut = getConversionAmount(_amountIn);
+            if (amountOut == 0) revert InvalidAmount();
+            emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+
+            // mint to this contract
+            require(token.mint(address(this), amountOut), "Token minting failed");
+
+            // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
+            SendParam memory sendParam = SendParam(
+                settings.bridgeChainId,
+                addressToBytes32(msg.sender),
+                amountOut, // amount is temporary to calculate quote
+                amountOut,
+                options,
+                "",
+                ""
+            );
+            MessagingFee memory fee = MessagingFee(_fee, 0);
+
+            // send through LayerZero
+            token.send{value: _fee}(sendParam, fee, payable(msg.sender));
+        }
     }
 
     function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
@@ -154,6 +201,10 @@ contract DepositsManagerL1 is
 
     function unpause() external onlyService whenPaused {
         _unpause();
+    }
+
+    function addressToBytes32(address _addr) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(_addr)));
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
