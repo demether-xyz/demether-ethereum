@@ -108,6 +108,7 @@ contract DepositsManagerL1 is
             if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
         } else {
             // get settings for chain ensuring it's set
+            if (address(messenger) == address(0)) revert InstanceNotSet();
             IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
             if (settings.bridgeChainId == 0) revert InvalidChainId();
 
@@ -143,12 +144,15 @@ contract DepositsManagerL1 is
     }
 
     function getRate() public view returns (uint256) {
+        if (address(pool) == address(0)) revert InstanceNotSet();
         return pool.getRate();
     }
 
     /// @notice Adds into Liquidity Pool to start producing yield
     function addLiquidity() external whenNotPaused nonReentrant {
+        if (address(pool) == address(0)) revert InstanceNotSet();
         wETH.withdraw(wETH.balanceOf(address(this)));
+        // slither-disable-next-line arbitrary-send-eth
         pool.addLiquidity{ value: address(this).balance }();
     }
 
@@ -156,9 +160,12 @@ contract DepositsManagerL1 is
 
     function syncRate(uint32[] calldata _chainId, uint256[] calldata _chainFee) external payable whenNotPaused nonReentrant {
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
+        if (address(messenger) == address(0)) revert InstanceNotSet();
+
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
+            // slither-disable-next-line arbitrary-send-eth
             messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }

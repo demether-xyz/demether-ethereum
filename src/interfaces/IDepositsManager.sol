@@ -17,6 +17,7 @@ interface IDepositsManager {
     error TokenMintFailed(address tokenReceiver, uint256 amount);
     error ImplementationIsNotContract(address newImplementation);
     error NotImplemented();
+    error InstanceNotSet();
 
     event Deposit(address indexed user, uint256 amountIn, uint256 amountOut, address referral);
     event DepositFeeSet(uint256 fee);
