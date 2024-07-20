@@ -15,12 +15,16 @@ pragma solidity ^0.8.26;
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract OwnableAccessControl is OwnableUpgradeable {
+    error UnauthorizedService(address caller);
+
     address private service;
 
     event ServiceChanged(address indexed oldService, address indexed newService);
 
     modifier onlyService() {
-        require(msg.sender == service || owner() == _msgSender(), "Caller is not service");
+        if (msg.sender != service && owner() != _msgSender()) {
+            revert UnauthorizedMinter(msg.sender);
+        }
         _;
     }
 

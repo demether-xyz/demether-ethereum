@@ -2,3 +2,4 @@
 # directories
 **/artifacts
 **/node_modules
+test/**
