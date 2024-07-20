@@ -7,7 +7,7 @@ interface ILiquidityPool {
     error Unauthorized();
     error InvalidFee();
     error TransferFailed(address);
-    error StrategyFailed(address);
+    error StrategyFailed();
     error ApprovalFailed();
     error LSTMintingNotSet();
     error InvalidEigenLayerStrategy();

@@ -60,17 +60,17 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Tracks the last total pooled ether
     uint256 private lastTotalPooledEther;
 
-    /// @notice Address of the frax minter
-    address public fraxMinter;
+    /// @notice Instance of the frax minter
+    IfrxETHMinter public fraxMinter;
 
     /// @notice Address of the EigenLayer strategy manager
-    address public eigenLayerStrategyManager;
+    IStrategyManager public eigenLayerStrategyManager;
 
-    /// @notice Address of the EigenLayer strategy
-    address public eigenLayerStrategy;
+    /// @notice Instance of the EigenLayer strategy
+    IStrategy public eigenLayerStrategy;
 
-    /// @notice Address of the EigenLayer delegation manager
-    address public eigenLayerDelegationManager;
+    /// @notice Instance of the EigenLayer delegation manager
+    IDelegationManager public eigenLayerDelegationManager;
 
     function initialize(address _depositsManager, address _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
@@ -127,9 +127,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         }
 
         // EigenLayer restaked sfrxETH
-        if (eigenLayerStrategyManager != address(0)) {
-            IStrategy strategy = IStrategy(eigenLayerStrategy);
-            sfrxETHBalance += strategy.userUnderlyingView(address(this));
+        if (address(eigenLayerStrategy) != address(0)) {
+            sfrxETHBalance += eigenLayerStrategy.userUnderlyingView(address(this));
         }
 
         // TODO this gives frxETH, but must be converted to ETH
@@ -176,39 +175,35 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _mintSfrxETH() internal {
-        if (fraxMinter == address(0)) return;
-
-        IfrxETHMinter(fraxMinter).submitAndDeposit{ value: address(this).balance }(address(this));
+        if (address(fraxMinter) == address(0)) return;
+        // slither-disable-next-line arbitrary-send-eth
+        fraxMinter.submitAndDeposit{ value: address(this).balance }(address(this));
     }
 
     function setFraxMinter(address _fraxMinter) external onlyOwner {
         if (_fraxMinter == address(0)) revert InvalidAddress();
 
-        fraxMinter = _fraxMinter;
-        sfrxETH = IsfrxETH(IfrxETHMinter(fraxMinter).sfrxETHToken());
+        fraxMinter = IfrxETHMinter(_fraxMinter);
+        sfrxETH = IsfrxETH(fraxMinter.sfrxETHToken());
     }
 
     /** RESTAKING **/
 
     // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _eigenLayerRestake() internal {
-        if (eigenLayerStrategyManager == address(0) || fraxMinter == address(0)) return;
+        if (address(eigenLayerStrategyManager) == address(0) || address(fraxMinter) == address(0)) return;
 
         uint256 sfrxETHBalance = sfrxETH.balanceOf(address(this));
-        if (!sfrxETH.approve(eigenLayerStrategyManager, sfrxETHBalance)) revert ApprovalFailed();
+        if (!sfrxETH.approve(address(eigenLayerStrategyManager), sfrxETHBalance)) revert ApprovalFailed();
 
-        uint256 shares = IStrategyManager(eigenLayerStrategyManager).depositIntoStrategy(
-            IStrategy(eigenLayerStrategy),
-            IERC20(address(sfrxETH)),
-            sfrxETHBalance
-        );
-        if (shares == 0) revert StrategyFailed(eigenLayerStrategyManager);
+        uint256 shares = eigenLayerStrategyManager.depositIntoStrategy(eigenLayerStrategy, IERC20(address(sfrxETH)), sfrxETHBalance);
+        if (shares == 0) revert StrategyFailed();
     }
 
     function delegateEigenLayer(address _operator) external onlyService {
-        if (eigenLayerDelegationManager == address(0)) revert InvalidEigenLayerStrategy();
+        if (address(eigenLayerDelegationManager) == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
-        IDelegationManager(eigenLayerDelegationManager).delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
+        eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
 
     function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
@@ -217,9 +212,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
         if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();
 
-        eigenLayerStrategyManager = _strategyManager;
-        eigenLayerStrategy = _strategy;
-        eigenLayerDelegationManager = _delegationManager;
+        eigenLayerStrategyManager = IStrategyManager(_strategyManager);
+        eigenLayerStrategy = IStrategy(_strategy);
+        eigenLayerDelegationManager = IDelegationManager(_delegationManager);
     }
 
     /** OTHER */
