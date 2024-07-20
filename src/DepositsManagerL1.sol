@@ -140,7 +140,7 @@ contract DepositsManagerL1 is
         }
     }
 
-    function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
+    function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         uint256 rate = getRate();
         amountOut = (_amountIn * PRECISION) / rate;
         return amountOut;

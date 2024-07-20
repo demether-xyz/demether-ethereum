@@ -23,7 +23,7 @@ contract OwnableAccessControl is OwnableUpgradeable {
 
     modifier onlyService() {
         if (msg.sender != service && owner() != _msgSender()) {
-            revert UnauthorizedMinter(msg.sender);
+            revert UnauthorizedService(msg.sender);
         }
         _;
     }
