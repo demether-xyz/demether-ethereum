@@ -66,7 +66,7 @@ contract DepositsManagerL1 is
     bool private nativeSupport;
 
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
-        if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
+        if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
         __Ownable_init();
         __Pausable_init();
