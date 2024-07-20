@@ -11,6 +11,7 @@ interface ILiquidityPool {
     error ApprovalFailed();
     error LSTMintingNotSet();
     error InvalidEigenLayerStrategy();
+    error MintFailed();
 
     event AddLiquidity(uint256 amount, uint256 shares, uint256 totalAssets, uint256 totalShares);
     event RewardsProtocol(uint256 amount);

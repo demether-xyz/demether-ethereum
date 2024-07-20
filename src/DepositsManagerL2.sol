@@ -18,7 +18,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/securit
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
-import { SendParam, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 import { IDOFT } from "./interfaces/IDOFT.sol";
 import { IWETH9 } from "./interfaces/IWETH9.sol";
@@ -138,7 +138,9 @@ contract DepositsManagerL2 is
             MessagingFee memory fee = MessagingFee(_fee, 0);
 
             // send through LayerZero
-            token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
+            // slither-disable-next-line unused-return
+            (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
+            if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
         }
     }
 
@@ -193,7 +195,7 @@ contract DepositsManagerL2 is
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
-        wETH.approve(_messenger, type(uint256).max);
+        if (!wETH.approve(_messenger, type(uint256).max)) revert ApprovalFailed();
     }
 
     function pause() external onlyService whenNotPaused {

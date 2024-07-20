@@ -95,7 +95,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
         uint256 amount = msg.value;
         (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
-        if (amount == 0 || shares == 0) revert InvalidAmount();
+        if (amount <= 0 || shares <= 0) revert InvalidAmount();
 
         totalShares += shares;
 
@@ -153,7 +153,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
             protocolAccruedFees += rewardsFee;
         }
         lastTotalPooledEther = totalPooledEtherWithDeposit;
-        shares = supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
+        shares = supply <= 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
     }
 
     function getRate() external view returns (uint256) {
@@ -168,16 +168,17 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         }
 
         uint256 amount = 1 ether;
-        return supply == 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
+        return supply <= 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
     }
 
     /** YIELD STRATEGIES */
 
     // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _mintSfrxETH() internal {
-        if (address(fraxMinter) == address(0)) return;
+        uint256 balance = address(this).balance;
+        if (address(fraxMinter) == address(0) || balance <= 0) return;
         // slither-disable-next-line arbitrary-send-eth
-        fraxMinter.submitAndDeposit{ value: address(this).balance }(address(this));
+        if (fraxMinter.submitAndDeposit{ value: balance }(address(this)) <= 0) revert MintFailed();
     }
 
     function setFraxMinter(address _fraxMinter) external onlyOwner {
@@ -197,7 +198,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (!sfrxETH.approve(address(eigenLayerStrategyManager), sfrxETHBalance)) revert ApprovalFailed();
 
         uint256 shares = eigenLayerStrategyManager.depositIntoStrategy(eigenLayerStrategy, IERC20(address(sfrxETH)), sfrxETHBalance);
-        if (shares == 0) revert StrategyFailed();
+        if (shares <= 0) revert StrategyFailed();
     }
 
     function delegateEigenLayer(address _operator) external onlyService {

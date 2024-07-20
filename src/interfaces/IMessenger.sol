@@ -11,6 +11,9 @@ interface IMessenger {
     error OnlyEndpoint(address);
     error OnlyPeer(uint32, address);
     error InvalidChainId();
+    error DepositFailed(address sender, uint256 amount);
+    error ApprovalFailed();
+    error SendMessageFailed();
 
     event SyncTokens(uint32 indexed chainId, uint8 bridgeId, uint256 amount, uint256 slippage);
 

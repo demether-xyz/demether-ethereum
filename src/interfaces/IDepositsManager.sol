@@ -18,6 +18,8 @@ interface IDepositsManager {
     error ImplementationIsNotContract(address newImplementation);
     error NotImplemented();
     error InstanceNotSet();
+    error SendFailed(address sender, uint256 amount);
+    error ApprovalFailed();
 
     event Deposit(address indexed user, uint256 amountIn, uint256 amountOut, address referral);
     event DepositFeeSet(uint256 fee);

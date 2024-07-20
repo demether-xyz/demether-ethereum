@@ -19,6 +19,7 @@ import {
     ILayerZeroEndpointV2,
     MessagingFee,
     MessagingParams,
+    MessagingReceipt,
     Origin
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
@@ -76,7 +77,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         __UUPSUpgradeable_init();
 
         wETH = IWETH9(_wETH);
-        wETH.approve(_depositsManager, type(uint256).max);
+        if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
 
         depositsManager = _depositsManager;
 
@@ -98,7 +99,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         if (settings.bridgeId == 0 || settings.toAddress == address(0) || router == address(0)) {
             revert BridgeNotSupported();
         } else if (settings.bridgeId == STARGATE) {
-            wETH.transferFrom(msg.sender, address(this), _amount);
+            if (!wETH.transferFrom(msg.sender, address(this), _amount)) revert DepositFailed(msg.sender, _amount);
             _syncStartGateV1(settings, router, _amount, _refund);
         }
     }
@@ -158,10 +159,11 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         bytes32 receiver = addressToBytes32(_settings.toAddress);
         uint128 _gas = abi.decode(_settings.options, (uint128));
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(_gas, 0);
-        ILayerZeroEndpointV2(_router).send{ value: msg.value }(
+        MessagingReceipt memory receipt = ILayerZeroEndpointV2(_router).send{ value: msg.value }(
             MessagingParams(_settings.bridgeChainId, receiver, _data, options, false),
             _refund
         );
+        if (receipt.guid == 0) revert SendMessageFailed();
     }
 
     function lzReceive(Origin calldata _origin, bytes32, bytes calldata _message, address, bytes calldata) public payable virtual {
