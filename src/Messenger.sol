@@ -13,10 +13,15 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ILayerZeroEndpointV2, MessagingFee, MessagingParams, Origin} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {
+    ILayerZeroEndpointV2,
+    MessagingFee,
+    MessagingParams,
+    Origin
+} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IWETH9.sol";
@@ -151,7 +156,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         bytes32 receiver = addressToBytes32(_settings.toAddress);
         uint128 _gas = abi.decode(_settings.options, (uint128));
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(_gas, 0);
-        ILayerZeroEndpointV2(_router).send{value: msg.value}(
+        ILayerZeroEndpointV2(_router).send{ value: msg.value }(
             MessagingParams(_settings.bridgeChainId, receiver, _data, options, false),
             _refund
         );
@@ -195,7 +200,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     function _sync_StartGateV1(Settings memory _settings, address _router, uint256 _amount, address _refund) internal {
         uint256 maxSlippage = _getFee(_amount, _settings.maxSlippage);
         wETH.withdraw(_amount);
-        IStargateRouterETH(_router).swapETH{value: _amount + msg.value}(
+        IStargateRouterETH(_router).swapETH{ value: _amount + msg.value }(
             uint16(_settings.bridgeChainId), // send to Fuji (use LayerZero chainId)
             payable(_refund), // refund adddress. extra gas (if any) is returned to this address
             abi.encodePacked(_settings.toAddress), // the address to send the tokens to on the destination

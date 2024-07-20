@@ -12,20 +12,18 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
-import {IDOFT, SendParam, MessagingFee} from "./interfaces/IDOFT.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/ILiquidityPool.sol";
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IDepositsManager.sol";
-import "./OwnableAccessControl.sol";
-
-import "forge-std/console.sol"; // todo remove
+import { IDOFT, SendParam, MessagingFee } from "./interfaces/IDOFT.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
 /**
  * @title L1 Deposits Manager
@@ -87,7 +85,7 @@ contract DepositsManagerL1 is
         uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
@@ -96,9 +94,9 @@ contract DepositsManagerL1 is
         uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
+        if (!nativeSupport) revert NativeTokenNotSupported();
         uint256 amountIn = msg.value - _fee;
-        wETH.deposit{value: address(this).balance - _fee}();
+        wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
@@ -110,7 +108,7 @@ contract DepositsManagerL1 is
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-            require(token.mint(msg.sender, amountOut), "Token minting failed");
+            if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
         } else {
             // get settings for chain ensuring it's set
             IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
@@ -121,7 +119,7 @@ contract DepositsManagerL1 is
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
             // mint to this contract
-            require(token.mint(address(this), amountOut), "Token minting failed");
+            if (!token.mint(address(this), amountOut)) revert TokenMintFailed(msg.sender, amountOut);
 
             // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
@@ -137,7 +135,7 @@ contract DepositsManagerL1 is
             MessagingFee memory fee = MessagingFee(_fee, 0);
 
             // send through LayerZero
-            token.send{value: _fee}(sendParam, fee, payable(msg.sender));
+            token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
         }
     }
 
@@ -154,7 +152,7 @@ contract DepositsManagerL1 is
     /// @notice Adds into Liquidity Pool to start producing yield
     function addLiquidity() external whenNotPaused nonReentrant {
         wETH.withdraw(wETH.balanceOf(address(this)));
-        pool.addLiquidity{value: address(this).balance}();
+        pool.addLiquidity{ value: address(this).balance }();
     }
 
     /** SYNC with L2 **/
@@ -164,16 +162,16 @@ contract DepositsManagerL1 is
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            messenger.syncMessage{value: _chainFee[i]}(_chainId[i], data, msg.sender);
+            messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }
         if (msg.value < totalFees) revert InsufficientFee();
     }
 
     /// @dev Function to be used when withdrawals are enabled
-    function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
+    function onMessageReceived(uint32, bytes calldata) external nonReentrant {
         //if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
-        revert("not implemented");
+        revert NotImplemented();
     }
 
     /** OTHER **/
@@ -208,6 +206,6 @@ contract DepositsManagerL1 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

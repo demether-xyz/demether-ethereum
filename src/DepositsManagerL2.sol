@@ -13,13 +13,13 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
-import {IDOFT, SendParam, MessagingFee} from "./interfaces/IDOFT.sol";
+import { IDOFT, SendParam, MessagingFee } from "./interfaces/IDOFT.sol";
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IMessenger.sol";
 import "./interfaces/IDepositsManager.sol";
@@ -99,7 +99,7 @@ contract DepositsManagerL2 is
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         require(nativeSupport, "Native token not supported");
         uint256 amountIn = msg.value - _fee;
-        wETH.deposit{value: address(this).balance - _fee}();
+        wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
@@ -138,7 +138,7 @@ contract DepositsManagerL2 is
             MessagingFee memory fee = MessagingFee(_fee, 0);
 
             // send through LayerZero
-            token.send{value: _fee}(sendParam, fee, payable(msg.sender));
+            token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
         }
     }
 
@@ -159,7 +159,7 @@ contract DepositsManagerL2 is
     /// @notice Sync tokens specifying amount to transfer to limit slippage
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, _amount, msg.sender);
+        messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
