@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 
 contract NativeMintingL2 is TestSetup {
+    error NativeTokenNotSupported();
+
     function test_L2_minting_rate() public {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
         assertEq(amountOut, 99.9 ether);
@@ -19,7 +21,7 @@ contract NativeMintingL2 is TestSetup {
     }
 
     function test_L2_deposit_eth() public {
-        vm.expectRevert("Native token not supported");
+        vm.expectRevert(NativeTokenNotSupported.selector);
         depositsManagerL2.depositETH{ value: 100 ether }(0, 0, address(0));
     }
 

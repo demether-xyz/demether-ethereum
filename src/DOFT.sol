@@ -17,6 +17,9 @@ import { OFTUpgradeable } from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contrac
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+    error ImplementationIsNotContract(address newImplementation);
+    error UnauthorizedMinter(address caller);
+
     address private _minter;
 
     /// @notice Constructor with LayerZero endpoint.
@@ -24,7 +27,9 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
 
     /// @notice Checks if the caller is the designated minter.
     modifier onlyMinter() {
-        require(msg.sender == _minter, "Caller is not the minter");
+        if (msg.sender != _minter) {
+            revert UnauthorizedMinter(msg.sender);
+        }
         _;
     }
 
@@ -62,6 +67,6 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }
