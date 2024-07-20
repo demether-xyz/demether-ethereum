@@ -118,12 +118,14 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     }
 
     function setSettingsMessages(uint32 _destination, Settings calldata _settings) external onlyService {
+        if (_destination == 0) revert InvalidChainId();
         settingsMessages[_destination] = _settings;
         settingsMessagesBridges[_settings.bridgeId][_settings.bridgeChainId] = _settings;
         emit SettingsMessages(_destination, _settings.bridgeId, _settings.toAddress);
     }
 
     function setSettingsTokens(uint32 _destination, Settings calldata _settings) external onlyService {
+        if (_destination == 0) revert InvalidChainId();
         settingsTokens[_destination] = _settings;
         emit SettingsTokens(_destination, _settings.bridgeId, _settings.toAddress);
     }
@@ -135,6 +137,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
             uint8 _bridgeId = _bridgeIds[i];
             address _router = _routers[i];
 
+            if (_bridgeId == 0) revert BridgeNotSupported();
             if (_router == address(0)) revert InvalidAddress();
             routers[_bridgeId] = _router;
 

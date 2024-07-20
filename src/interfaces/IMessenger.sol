@@ -10,6 +10,7 @@ interface IMessenger {
     error InvalidParametersLength();
     error OnlyEndpoint(address);
     error OnlyPeer(uint32, address);
+    error InvalidChainId();
 
     event SyncTokens(uint32 indexed chainId, uint8 bridgeId, uint256 amount, uint256 slippage);
 

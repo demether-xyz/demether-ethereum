@@ -119,7 +119,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         }
     }
 
-    function totalAssets() public view virtual returns (uint256) {
+    function totalAssets() public view returns (uint256) {
         uint256 sfrxETHBalance = 0;
 
         if (address(sfrxETH) != address(0)) {
@@ -224,15 +224,13 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /** OTHER */
 
-    function setProtocolFee(uint256 _fee) external onlyService {
-        if (_fee > 3e16) revert InvalidFee();
-
+    function setProtocolFee(uint256 _fee) external onlyOwner {
+        if (_fee > PRECISION) revert InvalidFee();
         protocolFee = _fee;
     }
 
     function setProtocolTreasury(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidAddress();
-
         protocolTreasury = _treasury;
     }
 
