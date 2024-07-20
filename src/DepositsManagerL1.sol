@@ -43,7 +43,6 @@ contract DepositsManagerL1 is
     using OptionsBuilder for bytes;
 
     uint256 internal constant PRECISION = 1e18;
-    uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
 
     /// @notice Instances of mintable token
@@ -167,7 +166,7 @@ contract DepositsManagerL1 is
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            // slither-disable-next-line arbitrary-send-eth
+            // slither-disable-next-line arbitrary-send-eth, calls-loop
             messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }

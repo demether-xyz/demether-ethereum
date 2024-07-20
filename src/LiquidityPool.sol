@@ -49,7 +49,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     uint256 public totalShares;
 
     /// @notice Protocol fee destination
-    address public protocolTreasury;
+    address payable public protocolTreasury;
 
     /// @notice Fee charged for protocol on rewards
     uint256 public protocolFee;
@@ -72,7 +72,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Instance of the EigenLayer delegation manager
     IDelegationManager public eigenLayerDelegationManager;
 
-    function initialize(address _depositsManager, address _owner, address _service) external initializer onlyProxy {
+    function initialize(address _depositsManager, address payable _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
         __Ownable_init();
@@ -106,8 +106,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (protocolAccruedFees > 0 && balance > 0) {
             uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
             protocolAccruedFees -= toPay;
-            (bool success, ) = protocolTreasury.call{ value: toPay }("");
-            if (!success) revert TransferFailed(protocolTreasury);
+            protocolTreasury.transfer(toPay);
         }
 
         // mint sfrxETH
@@ -223,9 +222,10 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     function setProtocolFee(uint256 _fee) external onlyOwner {
         if (_fee > PRECISION) revert InvalidFee();
         protocolFee = _fee;
+        emit ProtocolFeeUpdated(_fee, msg.sender);
     }
 
-    function setProtocolTreasury(address _treasury) external onlyOwner {
+    function setProtocolTreasury(address payable _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidAddress();
         protocolTreasury = _treasury;
     }

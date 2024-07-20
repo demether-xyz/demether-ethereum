@@ -172,6 +172,7 @@ contract DepositsManagerL2 is
             if (_block > rateSyncBlock) {
                 rate = _rate;
                 rateSyncBlock = _block;
+                emit RateUpdated(_rate, _block);
             }
         } else {
             revert InvalidMessageCode();

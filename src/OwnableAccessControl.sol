@@ -16,6 +16,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 
 contract OwnableAccessControl is OwnableUpgradeable {
     error UnauthorizedService(address caller);
+    error InvalidAddress();
 
     address private service;
 
@@ -34,9 +35,10 @@ contract OwnableAccessControl is OwnableUpgradeable {
         setService(initialService);
     }
 
-    function setService(address newService) public onlyOwner {
-        emit ServiceChanged(service, newService);
-        service = newService;
+    function setService(address _newService) public onlyOwner {
+        if (_newService == address(0)) revert InvalidAddress();
+        emit ServiceChanged(service, _newService);
+        service = _newService;
     }
 
     function getService() public view returns (address) {

@@ -77,12 +77,11 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         __UUPSUpgradeable_init();
 
         wETH = IWETH9(_wETH);
-        if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
-
         depositsManager = _depositsManager;
-
         setService(_service);
         transferOwnership(_owner);
+
+        if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
     }
 
     /** MAIN METHODS **/
@@ -140,10 +139,12 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
 
             if (_bridgeId == 0) revert BridgeNotSupported();
             if (_router == address(0)) revert InvalidAddress();
+            // slither-disable-next-line reentrancy-benign
             routers[_bridgeId] = _router;
 
             if (_bridgeId == LAYERZERO) {
                 if (_owner == address(0)) revert InvalidAddress();
+                // slither-disable-next-line calls-loop
                 ILayerZeroEndpointV2(_router).setDelegate(_owner);
             }
         }
