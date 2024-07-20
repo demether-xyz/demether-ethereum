@@ -32,10 +32,6 @@ import { OwnableAccessControl } from "./OwnableAccessControl.sol";
  * Main entry interface allows users to deposit tokens on Layer 1
  */
 
-/*
-TODO
-    -Change erros format
-*/
 contract DepositsManagerL1 is
     Initializable,
     OwnableAccessControl,
