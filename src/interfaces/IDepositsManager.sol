@@ -6,6 +6,7 @@ interface IDepositsManager {
     error InvalidSyncAmount();
     error InvalidParametersLength();
     error InsufficientFee();
+    error InvalidFee();
     error Unauthorized();
     error InvalidMessageCode();
     error RateInvalid(uint256);
