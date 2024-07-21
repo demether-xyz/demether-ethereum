@@ -15,6 +15,6 @@ interface ILiquidityPool {
     event RewardsProtocol(uint256 amount);
     event ProtocolFeeUpdated(uint256 newFee, address updatedBy);
 
-    function addLiquidity() external payable;
+    function addLiquidity(bool) external payable;
     function getRate() external view returns (uint256);
 }

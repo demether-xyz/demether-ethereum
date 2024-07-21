@@ -136,6 +136,9 @@ contract DepositsManagerL1 is
             (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
             if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
         }
+
+        // add liquidity without processing to minimize gas without affecting shares
+        _addLiquidity(false);
     }
 
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
@@ -151,10 +154,15 @@ contract DepositsManagerL1 is
 
     /// @notice Adds into Liquidity Pool to start producing yield
     function addLiquidity() external whenNotPaused nonReentrant {
+        _addLiquidity(true);
+    }
+
+    function _addLiquidity(bool _process) internal {
         if (address(pool) == address(0)) revert InstanceNotSet();
-        wETH.withdraw(wETH.balanceOf(address(this)));
+        uint256 balanceWETH = wETH.balanceOf(address(this));
+        if (balanceWETH > 0) wETH.withdraw(balanceWETH);
         // slither-disable-next-line arbitrary-send-eth
-        pool.addLiquidity{ value: address(this).balance }();
+        pool.addLiquidity{ value: address(this).balance }(_process);
     }
 
     /** SYNC with L2 **/

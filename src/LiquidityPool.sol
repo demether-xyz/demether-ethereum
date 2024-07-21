@@ -90,31 +90,40 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /** FUNDS MANAGEMENT */
 
     /// @notice Received ETH and mints shares to determine rate
-    function addLiquidity() external payable {
+    /// @param _process Whether to process the liquidity
+    function addLiquidity(bool _process) external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
+        // convert to shares
         uint256 amount = msg.value;
-        (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
-        if (amount <= 0 || shares <= 0) revert InvalidAmount();
+        if (amount > 0) {
+            (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
+            if (shares <= 0) revert InvalidAmount();
 
-        totalShares += shares;
+            totalShares += shares;
 
-        emit AddLiquidity(amount, shares, totalPooledAssets, shares);
-
-        // pay-out fees
-        uint256 balance = address(this).balance;
-        if (protocolAccruedFees > 0 && balance > 0) {
-            uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
-            protocolAccruedFees -= toPay;
-            protocolTreasury.transfer(toPay);
+            emit AddLiquidity(amount, shares, totalPooledAssets, shares);
         }
 
-        // mint sfrxETH
-        if (address(this).balance > 0) {
-            _mintSfrxETH();
+        // process liquidity
+        if (_process) {
+            uint256 balance = address(this).balance;
 
-            // send to EigenLayer strategies
-            _eigenLayerRestake();
+            // pay-out fees
+            if (protocolAccruedFees > 0 && balance > 0) {
+                uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
+                protocolAccruedFees -= toPay;
+                balance -= toPay;
+                protocolTreasury.transfer(toPay);
+            }
+
+            // mint sfrxETH & restake
+            if (balance > 0) {
+                _mintSfrxETH();
+
+                // send to EigenLayer strategies
+                _eigenLayerRestake();
+            }
         }
     }
 
