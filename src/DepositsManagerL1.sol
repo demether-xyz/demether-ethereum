@@ -196,7 +196,7 @@ contract DepositsManagerL1 is
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            // slither-disable-next-line arbitrary-send-eth, calls-loop
+            // slither-disable-next-line arbitrary-send-eth,calls-loop
             messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }
