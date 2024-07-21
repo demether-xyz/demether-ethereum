@@ -46,27 +46,32 @@ contract DepositsManagerL2 is
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
 
-    /// @notice Instances of mintable token
+    /// @notice Mintable token instance
     IDOFT public token;
 
-    /// @notice Instance of messenger handler
+    /// @notice Messenger handler instance
     IMessenger public messenger;
 
     /// @notice Wrapped ETH instance
     IWETH9 private wETH;
 
-    /// @notice Chain native token is ETH
+    /// @notice Indicates if native token (ETH) deposits are supported
     bool private nativeSupport;
 
-    /// @notice Deposit fee in 1e18 precision to cover gas and slippage
+    /// @notice Deposit fee in 1e18 precision for gas and slippage coverage
     uint256 public depositFee;
 
     /// @notice Exchange rate from L1
     uint256 private rate;
 
-    /// @notice Rate block
+    /// @notice Block number of the last rate sync
     uint256 public rateSyncBlock;
 
+    /// @notice Initializes the contract with essential parameters
+    /// @param _wETH Address of the Wrapped ETH contract
+    /// @param _owner Address of the contract owner
+    /// @param _service Address of the service account
+    /// @param _nativeSupport Whether native token deposits are supported
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
@@ -82,6 +87,12 @@ contract DepositsManagerL2 is
         transferOwnership(_owner);
     }
 
+    /// @notice Deposits tokens and optionally bridges to another chain
+    /// @param _amountIn Amount of tokens to deposit
+    /// @param _chainId Target chain ID (0 for local minting)
+    /// @param _fee LayerZero fee for cross-chain transfers
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
     function deposit(
         uint256 _amountIn,
         uint32 _chainId,
@@ -92,6 +103,11 @@ contract DepositsManagerL2 is
         amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
+    /// @notice Deposits native ETH and optionally bridges to another chain
+    /// @param _chainId Target chain ID (0 for local minting)
+    /// @param _fee LayerZero fee for cross-chain transfers
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
     function depositETH(
         uint32 _chainId,
         uint256 _fee,
@@ -103,6 +119,12 @@ contract DepositsManagerL2 is
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
+    /// @notice Internal function to process deposits
+    /// @param _amountIn Amount of tokens to deposit
+    /// @param _chainId Target chain ID
+    /// @param _fee LayerZero fee
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
     function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
         if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
 
@@ -144,6 +166,9 @@ contract DepositsManagerL2 is
         }
     }
 
+    /// @notice Calculates the output amount based on input and current rate
+    /// @param _amountIn Input amount
+    /// @return amountOut Converted output amount
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
@@ -152,18 +177,22 @@ contract DepositsManagerL2 is
         return amountOut;
     }
 
+    /// @notice Returns the current exchange rate
+    /// @return Current rate
     function getRate() public view returns (uint256) {
         return rate;
     }
 
-    /** SYNC with L1 **/
-
-    /// @notice Sync tokens specifying amount to transfer to limit slippage
+    /// @notice Syncs tokens with L1, specifying amount to transfer
+    /// @param _amount Amount of tokens to sync
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
         messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
+    /// @notice Handles incoming messages from L1
+    /// @param _chainId Source chain ID
+    /// @param _message Received message
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
@@ -179,38 +208,48 @@ contract DepositsManagerL2 is
         }
     }
 
-    /** OTHER **/
-
+    /// @notice Sets the deposit fee
+    /// @param _fee New fee value
     function setDepositFee(uint256 _fee) external onlyService {
         if (_fee > PRECISION) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
     }
 
+    /// @notice Sets the token contract address
+    /// @param _token New token address
     function setToken(address _token) external onlyOwner {
         if (_token == address(0)) revert InvalidAddress();
-
         token = IDOFT(_token);
     }
 
+    /// @notice Sets the messenger contract address
+    /// @param _messenger New messenger address
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
         if (!wETH.approve(_messenger, type(uint256).max)) revert ApprovalFailed();
     }
 
+    /// @notice Pauses the contract
     function pause() external onlyService whenNotPaused {
         _pause();
     }
 
+    /// @notice Unpauses the contract
     function unpause() external onlyService whenPaused {
         _unpause();
     }
 
+    /// @notice Converts an address to bytes32
+    /// @param _addr Address to convert
+    /// @return Bytes32 representation of the address
     function addressToBytes32(address _addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
     }
 
+    /// @notice Authorizes an upgrade to a new implementation
+    /// @param _newImplementation Address of the new implementation
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
