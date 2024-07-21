@@ -18,7 +18,7 @@
 
 ## Overview
 
-Demether is a cutting-edge multichain protocol designed to maximize yield across different blockchain networks. By leveraging a sophisticated blend of restaking, stablecoins, and other financial derivatives, Demether ensures efficient and secure high-yield opportunities for its users.
+Demether is a cutting-edge multichain protocol designed to maximize yield across different blockchain networks. By leveraging a sophisticated blend of restaking, stablecoins, and other financial derivatives, Demether ensures efficient and secure high-yield opportunities for its users. Demether is designed for users seeking to maximize their ETH yields across multiple blockchain layers while minimizing risk and complexity.
 
 ## Key Features
 
@@ -35,6 +35,7 @@ Demether is a cutting-edge multichain protocol designed to maximize yield across
 6. **Protocol-Owned Liquidity**: Accumulates fees to build protocol-owned liquidity, enhancing sustainability.
 7. **Rate Synchronization**: Rates are synced between Layer 1 and Layer 2 chains by public call.
 8. **Upgradeable Design**: Allows for future improvements and additions to the protocol.
+9. **Flexible Design**: Allows for easy integration of new yield strategies and supported networks in the future.
 
 ## Architecture
 
@@ -243,6 +244,7 @@ The Demether protocol consists of several key components:
 4. LiquidityPool stakes ETH using frxETH and potentially restakes using EigenLayer.
 5. Yields are accumulated and reflected in the increasing value of DETH/DOFT tokens.
 6. Cross-chain operations are facilitated by the Messenger contract using StarGate Bridge.
+7. Accumulated yields are periodically distributed, increasing the value of user shares.
 
 ## Key Processes
 
@@ -265,3 +267,5 @@ Deposits from both L1 and L2 remain in the DepositsManager contract. A public ca
 - Upgradeable contracts with access control
 - Integration with established protocols (frxETH, EigenLayer)
 - Cross-chain message verification and security measures
+- Regular security audits and open-source code for community review
+- Timelocks and multisig controls on critical protocol functions
