@@ -1,18 +1,36 @@
 # Demether Protocol
 
+## Table of Contents
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Architecture](#architecture)
+   - [DOFT (Demether Open Fungible Token)](#doft-demether-open-fungible-token)
+   - [DepositsManagerL1](#depositsmanagerl1)
+   - [DepositsManagerL2](#depositsmanagerl2)
+   - [Messenger](#messenger)
+   - [LiquidityPool](#liquiditypool)
+4. [Protocol Flow](#protocol-flow)
+5. [Key Processes](#key-processes)
+   - [Syncing Rate on L2 Chains](#syncing-rate-on-l2-chains)
+   - [Syncing Tokens from L2 to L1](#syncing-tokens-from-l2-to-l1)
+   - [Adding Liquidity and Minting sfrxETH](#adding-liquidity-and-minting-sfrxeth)
+6. [Security Considerations](#security-considerations)
+
+## Overview
+
 Demether is a cutting-edge multichain protocol designed to maximize yield across different blockchain networks. By leveraging a sophisticated blend of restaking, stablecoins, and other financial derivatives, Demether ensures efficient and secure high-yield opportunities for its users.
 
 ## Key Features
 
 1. **Multi-Layer Staking**: Supports ETH staking on both Layer 1 (Ethereum mainnet) and Layer 2 networks.
 2. **Cross-Chain Functionality**:
-    - Enables seamless transfer of assets and messages between different blockchain networks.
-    - Utilizes StarGate Bridge v1 for ETH transfers between Layer 1 and Layer 2.
+   - Enables seamless transfer of assets and messages between different blockchain networks.
+   - Utilizes StarGate Bridge v1 for ETH transfers between Layer 1 and Layer 2.
 3. **Yield Optimization**:
-    - Utilizes multiple strategies (e.g., frxETH, EigenLayer) to maximize staking returns.
-    - Deposits are allocated into sfrxETH and EigenLayer LST deposits.
+   - Utilizes multiple strategies (e.g., frxETH, EigenLayer) to maximize staking returns.
+   - Deposits are allocated into sfrxETH and EigenLayer LST deposits.
 4. **EigenLayer Integration**:
-    - Supports a single operator for the EigenLayer staking strategy.
+   - Supports a single operator for the EigenLayer staking strategy.
 5. **Liquidity Management**: Efficient handling of user deposits and withdrawals across layers.
 6. **Protocol-Owned Liquidity**: Accumulates fees to build protocol-owned liquidity, enhancing sustainability.
 7. **Rate Synchronization**: Rates are synced between Layer 1 and Layer 2 chains by public call.
@@ -22,26 +40,12 @@ Demether is a cutting-edge multichain protocol designed to maximize yield across
 
 The Demether protocol consists of several key components:
 
-1. **DepositsManagerL1**: Manages user deposits on Layer 1.
-2. **DepositsManagerL2**: Manages user deposits on Layer 2.
-3. **Messenger**: Facilitates cross-chain message and token transfers.
-4. **LiquidityPool**: Manages ETH liquidity and staking strategies.
-5. **DOFT (Demether Open Fungible Token)**: ERC20 token representing staked ETH.
+1. **DOFT (Demether Open Fungible Token)**: ERC20 token representing staked ETH.
+2. **DepositsManagerL1**: Manages user deposits on Layer 1.
+3. **DepositsManagerL2**: Manages user deposits on Layer 2.
+4. **Messenger**: Facilitates cross-chain message and token transfers.
+5. **LiquidityPool**: Manages ETH liquidity and staking strategies.
 
-## Protocol Flow
-
-1. Users deposit ETH (or WETH) into DepositsManagerL1 or DepositsManagerL2.
-2. The protocol mints DETH tokens representing the user's share.
-3. Deposited ETH is sent to the LiquidityPool for yield generation.
-4. LiquidityPool stakes ETH using frxETH and potentially restakes using EigenLayer.
-5. Yields are accumulated and reflected in the increasing value of DETH tokens.
-6. Cross-chain operations are facilitated by the Messenger contract using StarGate Bridge.
-
-## Security Considerations
-
-- Upgradeable contracts with access control
-- Integration with established protocols (frxETH, EigenLayer)
-- Cross-chain message verification and security measures
 
 ### DOFT (Demether Open Fungible Token)
 
@@ -231,18 +235,33 @@ The Demether protocol consists of several key components:
 - frxETH: Primary ETH staking strategy
 - EigenLayer: Additional yield through restaking
 
-## Processes
+## Protocol Flow
 
-### Sync Rate on L2 Chains
+1. Users deposit ETH (or WETH) into DepositsManagerL1 or DepositsManagerL2.
+2. The protocol mints DETH/DOFT tokens representing the user's share.
+3. Deposited ETH is sent to the LiquidityPool for yield generation.
+4. LiquidityPool stakes ETH using frxETH and potentially restakes using EigenLayer.
+5. Yields are accumulated and reflected in the increasing value of DETH/DOFT tokens.
+6. Cross-chain operations are facilitated by the Messenger contract using StarGate Bridge.
+
+## Key Processes
+
+### Syncing Rate on L2 Chains
 
 The liquid token rates originate from the L1 chain and are propagated to the L2 chains. The rate is used to determine the amount of liquid tokens to mint when a user deposits ETH. To avoid staleness of the rate on any L2, if the rate has not been updated after a given time, the contract will not allow further deposits or withdrawals until a new rate is synced.
 
 To update the rate, call `syncRate()` on `DepositsManagerL1.sol`, providing the `chainId` and the appropriate gas fees.
 
-### Sync Tokens from L2 Chains to L1
+### Syncing Tokens from L2 to L1
 
-The syncTokens() function on DepositsManagerL2.sol allows users to sync tokens from L2 to L1. This function requires paying gas fees, which can be quoted by calling quoteLayerZero() on Messenger.sol.
+The `syncTokens()` function on `DepositsManagerL2.sol` allows users to sync tokens from L2 to L1. This function requires paying gas fees, which can be quoted by calling `quoteLayerZero()` on `Messenger.sol`.
 
-### Add Liquidity and Mint sfrxETH
+### Adding Liquidity and Minting sfrxETH
 
-Deposits from both L1 and L2 remain in the DepositsManager contract. A public call to addLiquidity() initiates the process of moving the funds to the pool, minting sfrxETH, and staking into EigenLayer.
+Deposits from both L1 and L2 remain in the DepositsManager contract. A public call to `addLiquidity()` initiates the process of moving the funds to the pool, minting sfrxETH, and staking into EigenLayer.
+
+## Security Considerations
+
+- Upgradeable contracts with access control
+- Integration with established protocols (frxETH, EigenLayer)
+- Cross-chain message verification and security measures
