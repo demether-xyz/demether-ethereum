@@ -26,11 +26,8 @@ import { IsfrxETH } from "@frxETH/IsfrxETH.sol";
 import { IStrategyManager, IStrategy, IDelegationManager } from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
 import { ISignatureUtils } from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
 
-/**
- * @title LiquidityPool
- * @dev Contracts holds ETH and determines the global rate
- */
-
+/// @title LiquidityPool
+/// @dev Manages ETH liquidity, staking, and yield strategies
 contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, ILiquidityPool {
     using FixedPointMathLib for uint256;
 
@@ -39,39 +36,43 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
 
-    /// @notice Contract able to manage the funds
+    /// @notice Contract authorized to manage deposits
     address private depositsManager;
 
-    /// @notice Instance of the sfrxETH token
+    /// @notice sfrxETH token contract
     IsfrxETH public sfrxETH;
 
-    /// @notice Amount of total shares issued
+    /// @notice Total shares issued
     uint256 public totalShares;
 
-    /// @notice Protocol fee destination
+    /// @notice Address receiving protocol fees
     address payable public protocolTreasury;
 
-    /// @notice Fee charged for protocol on rewards
+    /// @notice Protocol fee percentage (in PRECISION)
     uint256 public protocolFee;
 
-    /// @notice Total fees accrued not yet paid out
+    /// @notice Accumulated protocol fees not yet paid out
     uint256 public protocolAccruedFees;
 
-    /// @notice Tracks the last total pooled ether
+    /// @notice Last recorded total pooled ETH
     uint256 private lastTotalPooledEther;
 
-    /// @notice Instance of the frax minter
+    /// @notice frxETH minter contract
     IfrxETHMinter public fraxMinter;
 
-    /// @notice Address of the EigenLayer strategy manager
+    /// @notice EigenLayer strategy manager contract
     IStrategyManager public eigenLayerStrategyManager;
 
-    /// @notice Instance of the EigenLayer strategy
+    /// @notice EigenLayer strategy contract
     IStrategy public eigenLayerStrategy;
 
-    /// @notice Instance of the EigenLayer delegation manager
+    /// @notice EigenLayer delegation manager contract
     IDelegationManager public eigenLayerDelegationManager;
 
+    /// @dev Initializes the contract
+    /// @param _depositsManager Address authorized to manage deposits
+    /// @param _owner Contract owner address
+    /// @param _service Service address for access control
     function initialize(address _depositsManager, address payable _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
@@ -82,15 +83,12 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         setService(_service);
         transferOwnership(_owner);
 
-        // initial fee setting
-        protocolFee = 1e17; // 10%;
+        protocolFee = 1e17; // 10%
         protocolTreasury = _owner;
     }
 
-    /** FUNDS MANAGEMENT */
-
-    /// @notice Received ETH and mints shares to determine rate
-    /// @param _process Whether to process the liquidity
+    /// @notice Adds liquidity to the pool
+    /// @param _process If true, processes the liquidity (pay fees, mint sfrxETH, restake)
     function addLiquidity(bool _process) external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
@@ -127,6 +125,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         }
     }
 
+    /// @notice Calculates total assets in the pool
+    /// @return Total assets in ETH
     function totalAssets() public view returns (uint256) {
         uint256 sfrxETHBalance = 0;
 
@@ -145,6 +145,10 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         return address(this).balance + frxETHBalance - protocolAccruedFees;
     }
 
+    /// @dev Converts deposit amount to shares
+    /// @param _deposit Amount of ETH to deposit
+    /// @return shares Number of shares minted
+    /// @return totalPooledEtherWithDeposit Total pooled ETH after deposit
     function _convertToShares(uint256 _deposit) internal returns (uint256 shares, uint256 totalPooledEtherWithDeposit) {
         uint256 supply = totalShares;
         totalPooledEtherWithDeposit = totalAssets();
@@ -164,6 +168,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         shares = supply <= 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
     }
 
+    /// @notice Get current exchange rate of shares to ETH
+    /// @return Rate in ETH per share (in PRECISION)
     function getRate() external view returns (uint256) {
         uint256 supply = totalShares;
         uint256 totalPooledEther = totalAssets();
@@ -179,8 +185,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         return supply <= 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
     }
 
-    /** YIELD STRATEGIES */
-
+    /// @dev Mints sfrxETH with available ETH balance
     // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _mintSfrxETH() internal {
         uint256 balance = address(this).balance;
@@ -189,6 +194,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (fraxMinter.submitAndDeposit{ value: balance }(address(this)) <= 0) revert MintFailed();
     }
 
+    /// @notice Sets the frxETH minter address
+    /// @param _fraxMinter Address of the frxETH minter contract
     function setFraxMinter(address _fraxMinter) external onlyOwner {
         if (_fraxMinter == address(0)) revert InvalidAddress();
 
@@ -196,8 +203,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         sfrxETH = IsfrxETH(fraxMinter.sfrxETHToken());
     }
 
-    /** RESTAKING **/
-
+    /// @dev Restakes sfrxETH in EigenLayer
     // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _eigenLayerRestake() internal {
         if (address(eigenLayerStrategyManager) == address(0) || address(fraxMinter) == address(0)) return;
@@ -209,12 +215,18 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (shares <= 0) revert StrategyFailed();
     }
 
+    /// @notice Delegates to an operator in EigenLayer
+    /// @param _operator Address of the operator to delegate to
     function delegateEigenLayer(address _operator) external onlyService {
         if (address(eigenLayerDelegationManager) == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
         eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
 
+    /// @notice Sets EigenLayer contracts
+    /// @param _strategyManager Address of EigenLayer strategy manager
+    /// @param _strategy Address of EigenLayer strategy
+    /// @param _delegationManager Address of EigenLayer delegation manager
     function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
         if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0)) revert InvalidAddress();
         if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
@@ -226,23 +238,31 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         eigenLayerDelegationManager = IDelegationManager(_delegationManager);
     }
 
-    /** OTHER */
-
+    /// @notice Sets the protocol fee
+    /// @param _fee New fee value (in PRECISION)
     function setProtocolFee(uint256 _fee) external onlyOwner {
         if (_fee > PRECISION) revert InvalidFee();
         protocolFee = _fee;
         emit ProtocolFeeUpdated(_fee, msg.sender);
     }
 
+    /// @notice Sets the protocol treasury address
+    /// @param _treasury New treasury address
     function setProtocolTreasury(address payable _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidAddress();
         protocolTreasury = _treasury;
     }
 
+    /// @dev Calculates fee amount
+    /// @param _amountIn Input amount
+    /// @param _fee Fee percentage (in PRECISION)
+    /// @return feeAmount Calculated fee amount
     function _getFee(uint256 _amountIn, uint256 _fee) internal pure returns (uint256 feeAmount) {
         feeAmount = (_amountIn * _fee + PRECISION_SUB_ONE) / PRECISION;
     }
 
+    /// @dev Authorizes an upgrade to a new implementation
+    /// @param _newImplementation Address of the new implementation
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }

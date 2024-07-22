@@ -26,12 +26,9 @@ import { IMessenger } from "./interfaces/IMessenger.sol";
 import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
 import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
-/**
- * @title L1 Deposits Manager
- * @dev Base contract for Layer 1
- * Main entry interface allows users to deposit tokens on Layer 1
- */
-
+/// @title L1 Deposits Manager for Demether Finance
+/// @dev Manages deposits on Layer 1, interfacing with liquidity pools and facilitating cross-chain transfers
+/// @notice Handles user deposits, token minting, and cross-chain communication
 contract DepositsManagerL1 is
     Initializable,
     OwnableAccessControl,
@@ -45,21 +42,22 @@ contract DepositsManagerL1 is
     uint256 internal constant PRECISION = 1e18;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
 
-    /// @notice Instances of mintable token
+    /// @dev Token instance capable of minting
     IDOFT public token;
-
-    /// @notice Instance of liquidity pool
+    /// @dev Liquidity pool for managing funds
     ILiquidityPool public pool;
-
-    /// @notice Instance of messenger handler
+    /// @dev Messenger for handling cross-chain messages
     IMessenger public messenger;
-
-    /// @notice Wrapped ETH instance
+    /// @dev Wrapped ETH contract for handling native ETH deposits
     IWETH9 private wETH;
-
-    /// @notice Chain native token is ETH
+    /// @dev Flag indicating if native ETH is supported for deposits
     bool private nativeSupport;
 
+    /// @notice Initializes the contract with essential addresses and flags
+    /// @param _wETH Address of the WETH contract
+    /// @param _owner Owner address with admin privileges
+    /// @param _service Service address for contract control
+    /// @param _nativeSupport Flag to enable native ETH support
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
@@ -70,11 +68,16 @@ contract DepositsManagerL1 is
 
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
-
         setService(_service);
         transferOwnership(_owner);
     }
 
+    /// @notice Accepts WETH deposits and handles cross-chain transfers or local minting
+    /// @param _amountIn Amount of tokens deposited
+    /// @param _chainId Target chain ID for cross-chain transfer (0 for local minting)
+    /// @param _fee Fee associated with the transfer
+    /// @param _referral Referral address for potential rewards
+    /// @return amountOut Amount of tokens minted or transferred
     function deposit(
         uint256 _amountIn,
         uint32 _chainId,
@@ -85,6 +88,11 @@ contract DepositsManagerL1 is
         amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
+    /// @notice Handles native ETH deposits by converting to WETH
+    /// @param _chainId Target chain ID for cross-chain transfer (0 for local minting)
+    /// @param _fee Fee associated with the transfer
+    /// @param _referral Referral address for potential rewards
+    /// @return amountOut Amount of tokens minted or transferred
     function depositETH(
         uint32 _chainId,
         uint256 _fee,
@@ -96,10 +104,16 @@ contract DepositsManagerL1 is
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
+    /// @dev Internal function to handle deposit processing
+    /// @param _amountIn Amount of tokens deposited
+    /// @param _chainId Target chain ID
+    /// @param _fee Fee for the transaction
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted or transferred
     function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
         if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
 
-        // Mints Locally or mints and sends to a supported chain
+        // Mint locally or send to a supported chain
         if (_chainId == 0) {
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
@@ -123,7 +137,7 @@ contract DepositsManagerL1 is
             SendParam memory sendParam = SendParam(
                 settings.bridgeChainId,
                 addressToBytes32(msg.sender),
-                amountOut, // amount is temporary to calculate quote
+                amountOut,
                 amountOut,
                 options,
                 "",
@@ -141,22 +155,29 @@ contract DepositsManagerL1 is
         _addLiquidity(false);
     }
 
+    /// @notice Calculates the amount of tokens to be minted based on the deposited amount and current rate
+    /// @param _amountIn The amount of tokens deposited
+    /// @return amountOut The amount of mintable tokens
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         uint256 rate = getRate();
         amountOut = (_amountIn * PRECISION) / rate;
         return amountOut;
     }
 
+    /// @notice Retrieves the current conversion rate from the liquidity pool
+    /// @return Current rate of conversion between deposited tokens and minted tokens
     function getRate() public view returns (uint256) {
         if (address(pool) == address(0)) revert InstanceNotSet();
         return pool.getRate();
     }
 
-    /// @notice Adds into Liquidity Pool to start producing yield
+    /// @notice Adds liquidity to the pool from the contract's balance
     function addLiquidity() external whenNotPaused nonReentrant {
         _addLiquidity(true);
     }
 
+    /// @dev Internal function to add liquidity to the pool
+    /// @param _process Whether to process the liquidity addition
     function _addLiquidity(bool _process) internal {
         if (address(pool) == address(0)) revert InstanceNotSet();
         uint256 balanceWETH = wETH.balanceOf(address(this));
@@ -165,8 +186,9 @@ contract DepositsManagerL1 is
         pool.addLiquidity{ value: address(this).balance }(_process);
     }
 
-    /** SYNC with L2 **/
-
+    /// @notice Synchronizes rates across L1 and L2 chains
+    /// @param _chainId Array of chain IDs to sync with
+    /// @param _chainFee Array of fees for each chain message
     function syncRate(uint32[] calldata _chainId, uint256[] calldata _chainFee) external payable whenNotPaused nonReentrant {
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         if (address(messenger) == address(0)) revert InstanceNotSet();
@@ -174,50 +196,62 @@ contract DepositsManagerL1 is
         bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
-            // slither-disable-next-line arbitrary-send-eth, calls-loop
+            // slither-disable-next-line arbitrary-send-eth,calls-loop
             messenger.syncMessage{ value: _chainFee[i] }(_chainId[i], data, msg.sender);
             totalFees += _chainFee[i];
         }
         if (msg.value < totalFees) revert InsufficientFee();
     }
 
-    /// @dev Function to be used when withdrawals are enabled
+    /// @dev Handles incoming messages from other chains for withdrawals
     function onMessageReceived(uint32, bytes calldata) external nonReentrant {
-        //if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
+        // Placeholder for actual implementation
         revert NotImplemented();
     }
 
-    /** OTHER **/
-
+    /// @notice Fallback function to receive ETH
     receive() external payable {}
 
+    /// @notice Assigns a new token contract address
+    /// @param _token New token contract address
     function setToken(address _token) external onlyOwner {
         if (_token == address(0)) revert InvalidAddress();
         token = IDOFT(_token);
     }
 
+    /// @notice Assigns a new liquidity pool contract address
+    /// @param _pool New liquidity pool contract address
     function setLiquidityPool(address _pool) external onlyOwner {
         if (_pool == address(0)) revert InvalidAddress();
         pool = ILiquidityPool(_pool);
     }
 
+    /// @notice Assigns a new messenger contract address for cross-chain communications
+    /// @param _messenger New messenger contract address
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
     }
 
+    /// @notice Pauses all deposit and liquidity operations
     function pause() external onlyService whenNotPaused {
         _pause();
     }
 
+    /// @notice Resumes all deposit and liquidity operations
     function unpause() external onlyService whenPaused {
         _unpause();
     }
 
+    /// @dev Converts an address to a bytes32 value
+    /// @param _addr Address to convert
+    /// @return bytes32 representation of the address
     function addressToBytes32(address _addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
     }
 
+    /// @dev Authorizes upgrades of the contract
+    /// @param _newImplementation Address of the new implementation
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
