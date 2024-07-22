@@ -13,18 +13,18 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { SendParam, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
-import {IDOFT, SendParam, MessagingFee} from "./interfaces/IDOFT.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IDepositsManager.sol";
-import "./OwnableAccessControl.sol";
-import "forge-std/console.sol"; // todo remove
+import { IDOFT } from "./interfaces/IDOFT.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 /**
  * @title L2 Deposits Manager
  * @dev Base contract for Layer 2
@@ -68,7 +68,7 @@ contract DepositsManagerL2 is
     uint256 public rateSyncBlock;
 
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
-        require(_wETH != address(0), "Invalid wETH");
+        if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
         __Ownable_init();
         __Pausable_init();
@@ -88,7 +88,7 @@ contract DepositsManagerL2 is
         uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
@@ -97,9 +97,9 @@ contract DepositsManagerL2 is
         uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
+        if (!nativeSupport) revert NativeTokenNotSupported();
         uint256 amountIn = msg.value - _fee;
-        wETH.deposit{value: address(this).balance - _fee}();
+        wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
@@ -111,7 +111,7 @@ contract DepositsManagerL2 is
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-            require(token.mint(msg.sender, amountOut), "Token minting failed");
+            if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
         } else {
             // get settings for chain ensuring it's set
             IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
@@ -122,7 +122,7 @@ contract DepositsManagerL2 is
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
             // mint to this contract
-            require(token.mint(address(this), amountOut), "Token minting failed");
+            if (!token.mint(address(this), amountOut)) revert TokenMintFailed(msg.sender, amountOut);
 
             // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
             bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
@@ -138,7 +138,7 @@ contract DepositsManagerL2 is
             MessagingFee memory fee = MessagingFee(_fee, 0);
 
             // send through LayerZero
-            token.send{value: _fee}(sendParam, fee, payable(msg.sender));
+            token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
         }
     }
 
@@ -159,7 +159,7 @@ contract DepositsManagerL2 is
     /// @notice Sync tokens specifying amount to transfer to limit slippage
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, _amount, msg.sender);
+        messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
@@ -178,15 +178,15 @@ contract DepositsManagerL2 is
 
     /** OTHER **/
 
-    // TODO change to service modifier
-    function setDepositFee(uint256 _fee) external onlyOwner {
-        require(_fee < PRECISION, "Invalid fee");
+    function setDepositFee(uint256 _fee) external onlyService {
+        if (_fee > PRECISION) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
     }
 
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
+
         token = IDOFT(_token);
     }
 
@@ -209,6 +209,6 @@ contract DepositsManagerL2 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

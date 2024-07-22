@@ -6,11 +6,18 @@ interface IDepositsManager {
     error InvalidSyncAmount();
     error InvalidParametersLength();
     error InsufficientFee();
+    error InvalidFee();
     error Unauthorized();
     error InvalidMessageCode();
     error RateInvalid(uint256);
     error InvalidChainId();
     error InvalidAmount();
+    error DepositFailed(address sender, uint256 amount);
+    error NativeTokenNotSupported();
+    error TokenMintFailed(address tokenReceiver, uint256 amount);
+    error ImplementationIsNotContract(address newImplementation);
+    error NotImplemented();
+
     event Deposit(address indexed user, uint256 amountIn, uint256 amountOut, address referral);
     event DepositFeeSet(uint256 fee);
     function onMessageReceived(uint32 chainId, bytes calldata message) external;
