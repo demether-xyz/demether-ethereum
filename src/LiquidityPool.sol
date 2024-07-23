@@ -46,7 +46,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     uint256 public totalShares;
 
     /// @notice Address receiving protocol fees
-    address payable public protocolTreasury;
+    address public protocolTreasury;
 
     /// @notice Protocol fee percentage (in PRECISION)
     uint256 public protocolFee;
@@ -112,7 +112,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
                 uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
                 protocolAccruedFees -= toPay;
                 balance -= toPay;
-                protocolTreasury.transfer(toPay);
+                // slither-disable-next-line low-level-calls
+                (bool success, ) = protocolTreasury.call{ value: toPay }("");
+                if (!success) revert TransferFailed(protocolTreasury);
             }
 
             // mint sfrxETH & restake
@@ -248,7 +250,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /// @notice Sets the protocol treasury address
     /// @param _treasury New treasury address
-    function setProtocolTreasury(address payable _treasury) external onlyOwner {
+    function setProtocolTreasury(address _treasury) external onlyOwner {
         if (_treasury == address(0)) revert InvalidAddress();
         protocolTreasury = _treasury;
     }

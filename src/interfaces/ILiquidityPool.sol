@@ -28,6 +28,9 @@ interface ILiquidityPool {
     /// @notice Thrown when minting fails
     error MintFailed();
 
+    /// @notice Thrown when a transfer fails
+    error TransferFailed(address to);
+
     /// @notice Emitted when liquidity is added to the pool
     /// @param amount The amount of ETH added
     /// @param shares The number of shares minted
