@@ -30,7 +30,7 @@ contract NativeMintingL1 is TestSetup {
     function test_L1_add_liquidity() public {
         assertEq(depositsManagerL1.getRate(), 1 ether);
         depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
-        liquidityPool.addLiquidity();
+        depositsManagerL1.processLiquidity();
 
         // create rewards in the pool
         _rewards(10 ether);
@@ -40,7 +40,7 @@ contract NativeMintingL1 is TestSetup {
 
         // add liquidity
         depositsManagerL1.depositETH{ value: 109 ether }(0, 0, address(0));
-        liquidityPool.addLiquidity();
+        depositsManagerL1.processLiquidity();
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
         assertEq(liquidityPool.totalAssets(), 218 ether);
         assertEq(liquidityPool.totalShares(), 200 ether);
@@ -48,7 +48,7 @@ contract NativeMintingL1 is TestSetup {
 
     function test_L1_sync_rate() public {
         depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
-        liquidityPool.addLiquidity();
+        depositsManagerL1.processLiquidity();
 
         assertEq(depositsManagerL1.getRate(), 1 ether);
         assertEq(depositsManagerL2.getRate(), 1 ether);

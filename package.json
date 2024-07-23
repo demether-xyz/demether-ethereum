@@ -6,7 +6,8 @@
   "scripts": {
     "test": "forge test -vv",
     "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
-    "lint": "solhint --max-warnings 0 \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\""
+    "lint": "solhint --max-warnings 0 \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\"",
+    "slither": "slither ."
   },
   "dependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

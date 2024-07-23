@@ -50,6 +50,9 @@ interface ILiquidityPool {
     /// @notice Adds liquidity to the pool
     function addLiquidity() external payable;
 
+    /// @notice Processes liquidity in the pool
+    function processLiquidity() external payable;
+
     /// @notice Gets the current exchange rate of shares to ETH
     /// @return The current rate
     function getRate() external view returns (uint256);

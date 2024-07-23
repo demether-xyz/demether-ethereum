@@ -118,6 +118,11 @@ contract DepositsManagerL1 is
         pool.addLiquidity{ value: address(this).balance }();
     }
 
+    function processLiquidity() external whenNotPaused nonReentrant {
+        if (address(pool) == address(0)) revert InstanceNotSet();
+        pool.processLiquidity{ value: address(this).balance }();
+    }
+
     /// @notice Calculates the amount of tokens to be minted based on the deposited amount and current rate
     /// @param _amountIn The amount of tokens deposited
     /// @return amountOut The amount of mintable tokens

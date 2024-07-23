@@ -87,47 +87,43 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         protocolTreasury = _owner;
     }
 
-    function addLiquidity() external payable {
-        addLiquidity(false); // todo
+    /// @notice Adds liquidity to the pool increasing shares and receiving assets
+    function addLiquidity() public payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
+        uint256 amount = msg.value;
+
+        if (amount <= 0) revert InvalidAmount();
+        (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
+        if (shares <= 0) revert InvalidAmount();
+
+        totalShares += shares;
+
+        emit AddLiquidity(amount, shares, totalPooledAssets, shares);
     }
 
-    /// @notice Adds liquidity to the pool
-    /// @param _process If true, processes the liquidity (pay fees, mint sfrxETH, restake)
-    function addLiquidity(bool _process) public payable {
-        //        if (msg.sender != depositsManager) revert Unauthorized(); // todo clean
+    /// @notice Processes liquidity, paying out fees and restaking assets
+    function processLiquidity() external payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
+        if (msg.value > 0) addLiquidity();
 
-        // convert to shares
-        uint256 amount = msg.value;
-        if (amount > 0) {
-            (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
-            if (shares <= 0) revert InvalidAmount();
+        uint256 balance = address(this).balance;
 
-            totalShares += shares;
-
-            emit AddLiquidity(amount, shares, totalPooledAssets, shares);
+        // pay-out fees
+        if (protocolAccruedFees > 0 && balance > 0) {
+            uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
+            protocolAccruedFees -= toPay;
+            balance -= toPay;
+            // slither-disable-next-line low-level-calls
+            (bool success, ) = protocolTreasury.call{ value: toPay }("");
+            if (!success) revert TransferFailed(protocolTreasury);
         }
 
-        // process liquidity
-        if (_process) {
-            uint256 balance = address(this).balance;
+        // mint sfrxETH & restake
+        if (balance > 0) {
+            _mintSfrxETH();
 
-            // pay-out fees
-            if (protocolAccruedFees > 0 && balance > 0) {
-                uint256 toPay = protocolAccruedFees > balance ? balance : protocolAccruedFees;
-                protocolAccruedFees -= toPay;
-                balance -= toPay;
-                // slither-disable-next-line low-level-calls
-                (bool success, ) = protocolTreasury.call{ value: toPay }("");
-                if (!success) revert TransferFailed(protocolTreasury);
-            }
-
-            // mint sfrxETH & restake
-            if (balance > 0) {
-                _mintSfrxETH();
-
-                // send to EigenLayer strategies
-                _eigenLayerRestake();
-            }
+            // send to EigenLayer strategies
+            _eigenLayerRestake();
         }
     }
 
@@ -192,7 +188,6 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     }
 
     /// @dev Mints sfrxETH with available ETH balance
-    // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _mintSfrxETH() internal {
         uint256 balance = address(this).balance;
         if (address(fraxMinter) == address(0) || balance <= 0) return;
@@ -210,7 +205,6 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     }
 
     /// @dev Restakes sfrxETH in EigenLayer
-    // TODO discuss how to handle pause, limits, other. Potentially try/catch
     function _eigenLayerRestake() internal {
         if (address(eigenLayerStrategyManager) == address(0) || address(fraxMinter) == address(0)) return;
 
@@ -228,6 +222,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (_operator == address(0)) revert InvalidAddress();
         eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
+
+    /// @notice Fallback function to receive ETH
+    receive() external payable {}
 
     /// @notice Sets EigenLayer contracts
     /// @param _strategyManager Address of EigenLayer strategy manager
