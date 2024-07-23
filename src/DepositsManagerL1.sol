@@ -61,6 +61,14 @@ contract DepositsManagerL1 is
     /// @notice Chain native token is ETH
     bool private nativeSupport;
 
+    // Custom errors
+    error DepositFailed(address sender, uint256 amount);
+    error NativeTokenNotSupported();
+    error ZeroAmount();
+    error TokenMintFailed(address tokenReceiver, uint256 amount);
+    error ImplementationIsNotContract(address newImplementation);
+    error NotImplemented();
+
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0)) revert InvalidAddress();
 
@@ -77,21 +85,21 @@ contract DepositsManagerL1 is
     }
 
     function deposit(uint256 _amountIn, address _referral) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn, _referral);
     }
 
     function depositETH(address _referral) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
+        if (!nativeSupport) revert NativeTokenNotSupported();
         wETH.deposit{value: address(this).balance}();
         amountOut = _deposit(msg.value, _referral);
     }
 
     function _deposit(uint256 _amountIn, address _referral) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
+        if (_amountIn == 0) revert ZeroAmount();
         amountOut = getConversionAmount(_amountIn);
         emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+        if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
     }
 
     function getConversionAmount(uint256 _amountIn) public returns (uint256 amountOut) {
@@ -126,7 +134,7 @@ contract DepositsManagerL1 is
     /// @dev Function to be used when withdrawals are enabled
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
         //if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
-        revert("not implemented");
+        revert NotImplemented();
     }
 
     /** OTHER **/
@@ -157,6 +165,6 @@ contract DepositsManagerL1 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }
