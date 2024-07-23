@@ -20,6 +20,7 @@ import { FixedPointMathLib } from "solmate/utils/FixedPointMathLib.sol";
 
 import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
 import { IfrxETHMinter } from "./interfaces/IfrxETHMinter.sol";
+import { ICurvePool } from "./interfaces/ICurvePool.sol";
 import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
 import { IsfrxETH } from "@frxETH/IsfrxETH.sol";
@@ -68,6 +69,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /// @notice EigenLayer delegation manager contract
     IDelegationManager public eigenLayerDelegationManager;
+
+    /// @notice Curve pool for frxETH to ETH conversion
+    ICurvePool public frxETH_curvePool;
 
     /// @dev Initializes the contract
     /// @param _depositsManager Address authorized to manage deposits
@@ -140,10 +144,18 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
             sfrxETHBalance += eigenLayerStrategy.userUnderlyingView(address(this));
         }
 
-        // TODO this gives frxETH, but must be converted to ETH
         uint256 frxETHBalance = sfrxETH.convertToAssets(sfrxETHBalance);
 
-        return address(this).balance + frxETHBalance - protocolAccruedFees;
+        // Convert frxETH to ETH using Curve pool price
+        uint256 ethBalance;
+        if (address(frxETH_curvePool) != address(0)) {
+            uint256 frxETHPrice = frxETH_curvePool.get_p();
+            ethBalance = (frxETHBalance * frxETHPrice) / PRECISION;
+        } else {
+            ethBalance = frxETHBalance; // Fallback to 1:1 if Curve pool is not set
+        }
+
+        return address(this).balance + ethBalance - protocolAccruedFees;
     }
 
     /// @dev Converts deposit amount to shares
@@ -225,6 +237,13 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Fallback function to receive ETH
     receive() external payable {}
 
+    /// @notice Sets the address of the Curve pool used for frxETH/ETH price
+    /// @param _curvePool The address of the Curve pool contract
+    function setCurvePool(address _curvePool) external onlyOwner {
+        if (_curvePool == address(0)) revert InvalidAddress();
+        frxETH_curvePool = ICurvePool(_curvePool);
+    }
+
     /// @notice Sets EigenLayer contracts
     /// @param _strategyManager Address of EigenLayer strategy manager
     /// @param _strategy Address of EigenLayer strategy
@@ -232,7 +251,6 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
         if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0)) revert InvalidAddress();
         if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
-
         if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();
 
         eigenLayerStrategyManager = IStrategyManager(_strategyManager);

@@ -18,6 +18,7 @@ import { Messenger } from "../src/Messenger.sol";
 
 import "./mocks/WETH.sol";
 import "./mocks/MockStarGate.sol";
+import "./mocks/MockCurvePool.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     uint8 public constant LAYERZERO = 1;
@@ -149,6 +150,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
         liquidityPool.setFraxMinter(address(frxETHMinterContract));
+        liquidityPool.setCurvePool(address(new MockCurvePool()));
 
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
