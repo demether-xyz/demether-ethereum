@@ -64,6 +64,14 @@ contract DepositsManagerL2 is
     /// @notice Rate block
     uint256 public rateSyncBlock;
 
+    // Custom errors
+    error DepositFailed(address sender, uint256 amount);
+    error NativeTokenNotSupported();
+    error ZeroAmount();
+    error TokenMintFailed(address tokenReceiver, uint256 amount);
+    error ImplementationIsNotContract(address newImplementation);
+    error InvalidFee();
+
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         require(_wETH != address(0), "Invalid wETH");
 
@@ -80,21 +88,21 @@ contract DepositsManagerL2 is
     }
 
     function deposit(uint256 _amountIn, address _referral) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn, _referral);
     }
 
     function depositETH(address _referral) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
+        if (!nativeSupport) revert NativeTokenNotSupported();
         wETH.deposit{value: address(this).balance}();
         amountOut = _deposit(msg.value, _referral);
     }
 
     function _deposit(uint256 _amountIn, address _referral) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
+        if (_amountIn == 0) revert ZeroAmount();
         amountOut = getConversionAmount(_amountIn);
         emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+        if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
     }
 
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
@@ -135,13 +143,13 @@ contract DepositsManagerL2 is
 
     // TODO change to service modifier
     function setDepositFee(uint256 _fee) external onlyOwner {
-        require(_fee < PRECISION, "Invalid fee");
+        if (_fee >= PRECISION) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
     }
 
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
         token = IDOFT(_token);
     }
 
@@ -160,6 +168,6 @@ contract DepositsManagerL2 is
     }
 
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }
