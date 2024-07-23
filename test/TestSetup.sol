@@ -78,8 +78,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         frxETHtoken.addMinter(address(frxETHMinterContract));
 
         // increase sfrxETHtoken rate to 2.0
-        frxETHMinterContract.submitAndDeposit{value: 1 ether}(address(this));
-        frxETHMinterContract.submitAndGive{value: 1 ether}(address(sfrxETHtoken));
+        frxETHMinterContract.submitAndDeposit{ value: 1 ether }(address(this));
+        frxETHMinterContract.submitAndGive{ value: 1 ether }(address(sfrxETHtoken));
         vm.warp(block.timestamp + 1);
         sfrxETHtoken.syncRewards();
         vm.warp(block.timestamp + 1);
@@ -205,7 +205,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
             L1_EID, IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
         );
 
-        // todo set token peers >> test L1 to L2 transfers
+        // set token peers >> test L1 to L2 transfers
+        l1token.setPeer(L2_EID, addressToBytes32(address(l2token)));
+        l2token.setPeer(L1_EID, addressToBytes32(address(l1token)));
+
         vm.stopPrank();
     }
 

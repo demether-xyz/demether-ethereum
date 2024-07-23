@@ -2,5 +2,6 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+ignored_warnings_from = ["node_modules", "lib", "test"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
 import "../src/interfaces/ILiquidityPool.sol";
+import "../src/OwnableAccessControl.sol";
 
 contract LiquidityPoolTest is TestSetup {
     function setUp() public virtual override {
@@ -14,7 +15,7 @@ contract AddLiquidityTest is LiquidityPoolTest {
     function test_RevertWhenAddLiquidityCallerIsNotAuthorised() external {
         vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.Unauthorized.selector);
-        liquidityPool.addLiquidity();
+        liquidityPool.addLiquidity(false);
         vm.stopPrank();
     }
 }
@@ -29,7 +30,7 @@ contract SetFraxMinterTest is LiquidityPoolTest {
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(role.owner);
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         liquidityPool.setFraxMinter(address(0));
         vm.stopPrank();
     }
@@ -38,14 +39,14 @@ contract SetFraxMinterTest is LiquidityPoolTest {
 contract DelegateEigenLayerTest is LiquidityPoolTest {
     function test_RevertWhenDelegateEigenLayerCallerIsNotOwner() external {
         vm.startPrank(bob);
-        vm.expectRevert(bytes("Caller is not service"));
+        vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
         liquidityPool.delegateEigenLayer(address(bob));
         vm.stopPrank();
     }
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(role.owner);
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         liquidityPool.delegateEigenLayer(address(0));
         vm.stopPrank();
     }
@@ -61,13 +62,13 @@ contract SetEigenLayerTest is LiquidityPoolTest {
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(role.owner);
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         liquidityPool.setEigenLayer(address(0), address(bob), address(bob));
 
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         liquidityPool.setEigenLayer(address(bob), address(0), address(bob));
 
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         liquidityPool.setEigenLayer(address(bob), address(bob), address(0));
         vm.stopPrank();
     }
@@ -86,15 +87,15 @@ contract SetProtocolFeeTest is LiquidityPoolTest {
 
     function test_RevertWhenSetProtocolFeeCallerIsNotOwner() external {
         vm.startPrank(bob);
-        vm.expectRevert(bytes("Caller is not service"));
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
         liquidityPool.setProtocolFee(10);
         vm.stopPrank();
     }
 
-    function test_RevertWhenPassedZeroAddress() external {
+    function test_RevertWhenPassedInvalidFee() external {
         vm.startPrank(role.owner);
         vm.expectRevert(ILiquidityPool.InvalidFee.selector);
-        liquidityPool.setProtocolFee(1 ether);
+        liquidityPool.setProtocolFee(2 ether);
         vm.stopPrank();
     }
 }
@@ -104,7 +105,7 @@ contract SetProtocolTreasuryTest is LiquidityPoolTest {
         vm.startPrank(role.owner);
         assertEq(address(liquidityPool.protocolTreasury()), address(role.owner));
 
-        liquidityPool.setProtocolTreasury(address(bob));
+        liquidityPool.setProtocolTreasury(payable(address(bob)));
 
         assertEq(address(liquidityPool.protocolTreasury()), address(bob));
         vm.stopPrank();
@@ -113,14 +114,14 @@ contract SetProtocolTreasuryTest is LiquidityPoolTest {
     function test_RevertWhenSetProtocolTreasuryCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
-        liquidityPool.setProtocolTreasury(address(bob));
+        liquidityPool.setProtocolTreasury(payable(address(bob)));
         vm.stopPrank();
     }
 
     function test_RevertWhenPassedZeroAddress() external {
         vm.startPrank(role.owner);
-        vm.expectRevert(ILiquidityPool.InvalidAddress.selector);
-        liquidityPool.setProtocolTreasury(address(0));
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
+        liquidityPool.setProtocolTreasury(payable(address(0)));
         vm.stopPrank();
     }
 }
