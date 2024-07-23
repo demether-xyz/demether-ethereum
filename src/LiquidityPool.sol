@@ -87,10 +87,14 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         protocolTreasury = _owner;
     }
 
+    function addLiquidity() external payable {
+        addLiquidity(false); // todo
+    }
+
     /// @notice Adds liquidity to the pool
     /// @param _process If true, processes the liquidity (pay fees, mint sfrxETH, restake)
-    function addLiquidity(bool _process) external payable {
-        if (msg.sender != depositsManager) revert Unauthorized();
+    function addLiquidity(bool _process) public payable {
+        //        if (msg.sender != depositsManager) revert Unauthorized(); // todo clean
 
         // convert to shares
         uint256 amount = msg.value;

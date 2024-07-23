@@ -60,11 +60,11 @@ contract NativeMintingL2 is TestSetup {
     function test_L2_high_slippage() public {
         // initialize the rate on L1
         depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity();
         assertEq(depositsManagerL1.getRate(), 1 ether);
 
         test_L2_sync_tokens();
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
@@ -77,7 +77,7 @@ contract NativeMintingL2 is TestSetup {
         // add surplus to cover the gap
         wETHL1.deposit{ value: 1 ether }();
         wETHL1.transfer(address(depositsManagerL1), 1 ether);
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity();
 
         oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
@@ -91,7 +91,7 @@ contract NativeMintingL2 is TestSetup {
 
         // initialize the rate on L1 + add rewards
         depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity();
         _rewards(10 ether);
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
 
@@ -106,7 +106,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 balance = wETHL2.balanceOf(address(depositsManagerL2));
         depositsManagerL2.syncTokens{ value: 10 gwei }(balance);
         assertEq(address(depositsManagerL1).balance, 100 ether);
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);

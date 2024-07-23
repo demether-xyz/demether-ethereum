@@ -48,8 +48,7 @@ interface ILiquidityPool {
     event ProtocolFeeUpdated(uint256 newFee, address updatedBy);
 
     /// @notice Adds liquidity to the pool
-    /// @param process If true, processes the liquidity
-    function addLiquidity(bool process) external payable;
+    function addLiquidity() external payable;
 
     /// @notice Gets the current exchange rate of shares to ETH
     /// @return The current rate

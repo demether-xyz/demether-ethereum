@@ -17,7 +17,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 
 /// @title OwnableAccessControl
 /// @notice Extends OwnableUpgradeable with additional service role functionality
-contract OwnableAccessControl is OwnableUpgradeable {
+abstract contract OwnableAccessControl is OwnableUpgradeable {
     /// @notice Thrown when an unauthorized address attempts a service-only operation
     /// @param caller The address that attempted the call
     error UnauthorizedService(address caller);
@@ -44,10 +44,10 @@ contract OwnableAccessControl is OwnableUpgradeable {
     /// @notice Initializes the contract, setting the admin and initial service address
     /// @param admin The address to be set as the owner
     /// @param initialService The initial service address
-    function initialize(address admin, address initialService) public initializer {
+    function __OwnableAccessControl_init(address admin, address initialService) public onlyInitializing {
         __Ownable_init();
-        transferOwnership(admin);
         setService(initialService);
+        transferOwnership(admin);
     }
 
     /// @notice Sets a new service address
