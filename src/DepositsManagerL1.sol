@@ -20,7 +20,6 @@ import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/lib
 import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 import { IDOFT } from "./interfaces/IDOFT.sol";
-import { IWETH9 } from "./interfaces/IWETH9.sol";
 import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
 import { IMessenger } from "./interfaces/IMessenger.sol";
 import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
@@ -120,6 +119,7 @@ contract DepositsManagerL1 is
 
     function processLiquidity() external whenNotPaused nonReentrant {
         if (address(pool) == address(0)) revert InstanceNotSet();
+        // slither-disable-next-line arbitrary-send-eth
         pool.processLiquidity{ value: address(this).balance }();
     }
 
