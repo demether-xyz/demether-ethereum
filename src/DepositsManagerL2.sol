@@ -13,17 +13,18 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
-import "./interfaces/IDOFT.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IDepositsManager.sol";
-import "./OwnableAccessControl.sol";
-import "forge-std/console.sol"; // todo remove
+import { IDOFT } from "./interfaces/IDOFT.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 /**
  * @title L2 Deposits Manager
  * @dev Base contract for Layer 2
@@ -38,34 +39,41 @@ contract DepositsManagerL2 is
     UUPSUpgradeable,
     IDepositsManager
 {
+    using OptionsBuilder for bytes;
+
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
 
-    /// @notice Instances of mintable token
+    /// @notice Mintable token instance
     IDOFT public token;
 
-    /// @notice Instance of messenger handler
+    /// @notice Messenger handler instance
     IMessenger public messenger;
 
     /// @notice Wrapped ETH instance
     IWETH9 private wETH;
 
-    /// @notice Chain native token is ETH
+    /// @notice Indicates if native token (ETH) deposits are supported
     bool private nativeSupport;
 
-    /// @notice Deposit fee in 1e18 precision to cover gas and slippage
+    /// @notice Deposit fee in 1e18 precision for gas and slippage coverage
     uint256 public depositFee;
 
     /// @notice Exchange rate from L1
     uint256 private rate;
 
-    /// @notice Rate block
+    /// @notice Block number of the last rate sync
     uint256 public rateSyncBlock;
 
+    /// @notice Initializes the contract with essential parameters
+    /// @param _wETH Address of the Wrapped ETH contract
+    /// @param _owner Address of the contract owner
+    /// @param _service Address of the service account
+    /// @param _nativeSupport Whether native token deposits are supported
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
-        require(_wETH != address(0), "Invalid wETH");
+        if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
         __Ownable_init();
         __Pausable_init();
@@ -79,24 +87,88 @@ contract DepositsManagerL2 is
         transferOwnership(_owner);
     }
 
-    function deposit(uint256 _amountIn, address _referral) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(wETH.transferFrom(address(msg.sender), address(this), _amountIn), "Deposit Failed");
-        amountOut = _deposit(_amountIn, _referral);
+    /// @notice Deposits tokens and optionally bridges to another chain
+    /// @param _amountIn Amount of tokens to deposit
+    /// @param _chainId Target chain ID (0 for local minting)
+    /// @param _fee LayerZero fee for cross-chain transfers
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
+    function deposit(
+        uint256 _amountIn,
+        uint32 _chainId,
+        uint256 _fee,
+        address _referral
+    ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
+        if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
+        amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
 
-    function depositETH(address _referral) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(nativeSupport, "Native token not supported");
-        wETH.deposit{value: address(this).balance}();
-        amountOut = _deposit(msg.value, _referral);
+    /// @notice Deposits native ETH and optionally bridges to another chain
+    /// @param _chainId Target chain ID (0 for local minting)
+    /// @param _fee LayerZero fee for cross-chain transfers
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
+    function depositETH(
+        uint32 _chainId,
+        uint256 _fee,
+        address _referral
+    ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
+        if (!nativeSupport) revert NativeTokenNotSupported();
+        uint256 amountIn = msg.value - _fee;
+        wETH.deposit{ value: address(this).balance - _fee }();
+        amountOut = _deposit(amountIn, _chainId, _fee, _referral);
     }
 
-    function _deposit(uint256 _amountIn, address _referral) internal returns (uint256 amountOut) {
-        require(_amountIn != 0, "Amount in zero");
-        amountOut = getConversionAmount(_amountIn);
-        emit Deposit(msg.sender, _amountIn, amountOut, _referral);
-        require(token.mint(msg.sender, amountOut), "Token minting failed");
+    /// @notice Internal function to process deposits
+    /// @param _amountIn Amount of tokens to deposit
+    /// @param _chainId Target chain ID
+    /// @param _fee LayerZero fee
+    /// @param _referral Referral address
+    /// @return amountOut Amount of tokens minted
+    function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
+        if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
+
+        // Mints Locally or mints and sends to a supported chain
+        if (_chainId == 0) {
+            amountOut = getConversionAmount(_amountIn);
+            if (amountOut == 0) revert InvalidAmount();
+            emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+            if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
+        } else {
+            // get settings for chain ensuring it's set
+            IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
+            if (settings.bridgeChainId == 0) revert InvalidChainId();
+
+            amountOut = getConversionAmount(_amountIn);
+            if (amountOut == 0) revert InvalidAmount();
+            emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+
+            // mint to this contract
+            if (!token.mint(address(this), amountOut)) revert TokenMintFailed(msg.sender, amountOut);
+
+            // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
+            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
+            SendParam memory sendParam = SendParam(
+                settings.bridgeChainId,
+                addressToBytes32(msg.sender),
+                amountOut, // amount is temporary to calculate quote
+                amountOut,
+                options,
+                "",
+                ""
+            );
+            MessagingFee memory fee = MessagingFee(_fee, 0);
+
+            // send through LayerZero
+            // slither-disable-next-line unused-return
+            (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
+            if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
+        }
     }
 
+    /// @notice Calculates the output amount based on input and current rate
+    /// @param _amountIn Input amount
+    /// @return amountOut Converted output amount
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
@@ -105,18 +177,22 @@ contract DepositsManagerL2 is
         return amountOut;
     }
 
+    /// @notice Returns the current exchange rate
+    /// @return Current rate
     function getRate() public view returns (uint256) {
         return rate;
     }
 
-    /** SYNC with L1 **/
-
-    /// @notice Sync tokens specifying amount to transfer to limit slippage
+    /// @notice Syncs tokens with L1, specifying amount to transfer
+    /// @param _amount Amount of tokens to sync
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
-        messenger.syncTokens{value: msg.value}(ETHEREUM_CHAIN_ID, _amount, msg.sender);
+        messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
+    /// @notice Handles incoming messages from L1
+    /// @param _chainId Source chain ID
+    /// @param _message Received message
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
@@ -125,41 +201,56 @@ contract DepositsManagerL2 is
             if (_block > rateSyncBlock) {
                 rate = _rate;
                 rateSyncBlock = _block;
+                emit RateUpdated(_rate, _block);
             }
         } else {
             revert InvalidMessageCode();
         }
     }
 
-    /** OTHER **/
-
-    // TODO change to service modifier
-    function setDepositFee(uint256 _fee) external onlyOwner {
-        require(_fee < PRECISION, "Invalid fee");
+    /// @notice Sets the deposit fee
+    /// @param _fee New fee value
+    function setDepositFee(uint256 _fee) external onlyService {
+        if (_fee > PRECISION) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
     }
 
+    /// @notice Sets the token contract address
+    /// @param _token New token address
     function setToken(address _token) external onlyOwner {
-        require(_token != address(0), "Invalid token");
+        if (_token == address(0)) revert InvalidAddress();
         token = IDOFT(_token);
     }
 
+    /// @notice Sets the messenger contract address
+    /// @param _messenger New messenger address
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
-        wETH.approve(_messenger, type(uint256).max);
+        if (!wETH.approve(_messenger, type(uint256).max)) revert ApprovalFailed();
     }
 
+    /// @notice Pauses the contract
     function pause() external onlyService whenNotPaused {
         _pause();
     }
 
+    /// @notice Unpauses the contract
     function unpause() external onlyService whenPaused {
         _unpause();
     }
 
+    /// @notice Converts an address to bytes32
+    /// @param _addr Address to convert
+    /// @return Bytes32 representation of the address
+    function addressToBytes32(address _addr) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(_addr)));
+    }
+
+    /// @notice Authorizes an upgrade to a new implementation
+    /// @param _newImplementation Address of the new implementation
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

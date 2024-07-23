@@ -13,31 +13,25 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ILayerZeroEndpointV2, MessagingFee, MessagingParams, Origin} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {
+    ILayerZeroEndpointV2,
+    MessagingFee,
+    MessagingParams,
+    MessagingReceipt,
+    Origin
+} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
-import "./interfaces/IMessenger.sol";
-import "./interfaces/IWETH9.sol";
-import "./interfaces/IDepositsManager.sol";
-import "./OwnableAccessControl.sol";
-import "forge-std/console.sol"; // todo remove
-/**
- * @title Messenger
- * @dev Contracts sends messages and tokens across chains
- */
+import { IMessenger } from "./interfaces/IMessenger.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
+import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { IStargateRouterETH } from "./interfaces/IStargateRouterETH.sol";
+import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
-interface IStargateRouterETH {
-    function swapETH(
-        uint16 _dstChainId, // destination Stargate chainId
-        address payable _refundAddress, // refund additional messageFee to this address
-        bytes calldata _toAddress, // the receiver of the destination ETH
-        uint256 _amountLD, // the amount, in Local Decimals, to be swapped
-        uint256 _minAmountLD // the minimum amount accepted out on destination
-    ) external payable;
-}
-
+/// @title Messenger
+/// @dev Facilitates cross-chain message and token transfers
 contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMessenger {
     using OptionsBuilder for bytes;
 
@@ -45,47 +39,53 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
-    uint8 public constant STARGATE_v2 = 3;
+    uint8 public constant STARGATE_V2 = 3;
 
-    /// @notice wETH instance
+    /// @notice WETH contract interface
     IWETH9 public wETH;
 
-    /// @notice Contract able to manage the funds
+    /// @notice Address authorized to manage funds
     address private depositsManager;
 
-    /// @notice Mapping of bridge ids to routers
-    mapping(uint8 => address) public routers;
+    /// @notice Maps bridge IDs to their respective router addresses
+    mapping(uint8 bridgeIds => address routerAddress) public routers;
 
-    /// @notice Mapping for each destination chainId messages settings
-    mapping(uint32 => Settings) public settings_messages;
+    /// @notice Stores settings for message transfers to each destination chain
+    mapping(uint32 destChainId => Settings settings) public settingsMessages;
 
-    /// @notice Mapping of local bridge id to settings
-    mapping(uint8 => mapping(uint32 => Settings)) public settings_messages_bridges;
+    /// @notice Stores settings for each bridge and destination chain combination
+    mapping(uint8 localBridgeId => mapping(uint32 destChainId => Settings settings)) public settingsMessagesBridges;
 
-    /// @notice Mapping for each destination chainId tokens settings
-    mapping(uint32 => Settings) public settings_tokens;
+    /// @notice Stores settings for token transfers to each destination chain
+    mapping(uint32 destChainId => Settings tokenSettings) public settingsTokens;
 
+    /// @notice Initializes the contract with essential addresses and permissions
+    /// @param _wETH Address of the WETH contract
+    /// @param _depositsManager Address of the deposits manager
+    /// @param _owner Address of the contract owner
+    /// @param _service Address of the service account
     function initialize(address _wETH, address _depositsManager, address _owner, address _service) external initializer onlyProxy {
-        if (_depositsManager == address(0) || _owner == address(0)) revert InvalidAddress();
+        if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
         __Ownable_init();
         __UUPSUpgradeable_init();
 
         wETH = IWETH9(_wETH);
-        wETH.approve(_depositsManager, type(uint256).max);
-
         depositsManager = _depositsManager;
-
         setService(_service);
         transferOwnership(_owner);
+
+        if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
     }
 
-    /** MAIN METHODS **/
-
+    /// @notice Transfers tokens across chains
+    /// @param _destination Destination chain ID
+    /// @param _amount Amount of tokens to transfer
+    /// @param _refund Address to refund excess fees
     function syncTokens(uint32 _destination, uint256 _amount, address _refund) external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
-        Settings memory settings = settings_tokens[_destination];
+        Settings memory settings = settingsTokens[_destination];
         if (msg.value < settings.minFee) revert InsufficientFee();
 
         emit SyncTokens(_destination, settings.bridgeId, _amount, settings.maxSlippage);
@@ -94,67 +94,100 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         if (settings.bridgeId == 0 || settings.toAddress == address(0) || router == address(0)) {
             revert BridgeNotSupported();
         } else if (settings.bridgeId == STARGATE) {
-            wETH.transferFrom(msg.sender, address(this), _amount);
-            _sync_StartGateV1(settings, router, _amount, _refund);
+            if (!wETH.transferFrom(msg.sender, address(this), _amount)) revert DepositFailed(msg.sender, _amount);
+            _syncStartGateV1(settings, router, _amount, _refund);
         }
     }
 
+    /// @notice Sends a message across chains
+    /// @param _destination Destination chain ID
+    /// @param _data Message data to be sent
+    /// @param _refund Address to refund excess fees
     function syncMessage(uint32 _destination, bytes calldata _data, address _refund) external payable {
         if (msg.sender != depositsManager) revert Unauthorized();
 
-        Settings memory settings = settings_messages[_destination];
+        Settings memory settings = settingsMessages[_destination];
         if (msg.value < settings.minFee) revert InsufficientFee();
 
         address router = routers[settings.bridgeId];
         if (settings.bridgeId == 0 || settings.toAddress == address(0) || router == address(0)) {
             revert BridgeNotSupported();
         } else if (settings.bridgeId == LAYERZERO) {
-            _sync_LayerZero(settings, router, _data, _refund);
+            _syncLayerZero(settings, router, _data, _refund);
         }
     }
 
+    /// @notice Updates settings for message transfers to a specific chain
+    /// @param _destination Destination chain ID
+    /// @param _settings New settings for the destination
     function setSettingsMessages(uint32 _destination, Settings calldata _settings) external onlyService {
-        settings_messages[_destination] = _settings;
-        settings_messages_bridges[_settings.bridgeId][_settings.bridgeChainId] = _settings;
+        if (_destination == 0) revert InvalidChainId();
+        settingsMessages[_destination] = _settings;
+        settingsMessagesBridges[_settings.bridgeId][_settings.bridgeChainId] = _settings;
         emit SettingsMessages(_destination, _settings.bridgeId, _settings.toAddress);
     }
 
+    /// @notice Updates settings for token transfers to a specific chain
+    /// @param _destination Destination chain ID
+    /// @param _settings New settings for the destination
     function setSettingsTokens(uint32 _destination, Settings calldata _settings) external onlyService {
-        settings_tokens[_destination] = _settings;
+        if (_destination == 0) revert InvalidChainId();
+        settingsTokens[_destination] = _settings;
         emit SettingsTokens(_destination, _settings.bridgeId, _settings.toAddress);
     }
 
+    /// @notice Sets router addresses for different bridge protocols
+    /// @param _bridgeIds Array of bridge IDs
+    /// @param _routers Array of corresponding router addresses
+    /// @param _owner Address to set as the LayerZero delegate
     function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyOwner {
         if (_bridgeIds.length != _routers.length) revert InvalidParametersLength();
 
-        for (uint i = 0; i < _bridgeIds.length; i++) {
+        for (uint256 i = 0; i < _bridgeIds.length; i++) {
             uint8 _bridgeId = _bridgeIds[i];
             address _router = _routers[i];
 
+            if (_bridgeId == 0) revert BridgeNotSupported();
             if (_router == address(0)) revert InvalidAddress();
+            // slither-disable-next-line reentrancy-benign
             routers[_bridgeId] = _router;
 
             if (_bridgeId == LAYERZERO) {
                 if (_owner == address(0)) revert InvalidAddress();
+                // slither-disable-next-line calls-loop
                 ILayerZeroEndpointV2(_router).setDelegate(_owner);
             }
         }
     }
 
-    /** LAYER ZERO **/
+    /// @notice Retrieves message settings for a specific chain
+    /// @param chainId The chain ID to query
+    /// @return Settings struct for the specified chain
+    function getMessageSettings(uint32 chainId) external view returns (Settings memory) {
+        return settingsMessages[chainId];
+    }
 
-    function _sync_LayerZero(Settings memory _settings, address _router, bytes calldata _data, address _refund) internal {
+    /// @notice Internal function to handle LayerZero message transfers
+    /// @param _settings Transfer settings
+    /// @param _router LayerZero router address
+    /// @param _data Message data to be sent
+    /// @param _refund Address to refund excess fees
+    function _syncLayerZero(Settings memory _settings, address _router, bytes calldata _data, address _refund) internal {
         bytes32 receiver = addressToBytes32(_settings.toAddress);
         uint128 _gas = abi.decode(_settings.options, (uint128));
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(_gas, 0);
-        ILayerZeroEndpointV2(_router).send{value: msg.value}(
+        MessagingReceipt memory receipt = ILayerZeroEndpointV2(_router).send{ value: msg.value }(
             MessagingParams(_settings.bridgeChainId, receiver, _data, options, false),
             _refund
         );
+        if (receipt.guid == 0) revert SendMessageFailed();
     }
 
+    /// @notice Handles incoming LayerZero messages
+    /// @param _origin Origin information of the message
+    /// @param _message The received message data
     function lzReceive(Origin calldata _origin, bytes32, bytes calldata _message, address, bytes calldata) public payable virtual {
-        Settings memory settings = settings_messages_bridges[LAYERZERO][_origin.srcEid];
+        Settings memory settings = settingsMessagesBridges[LAYERZERO][_origin.srcEid];
         address router = routers[settings.bridgeId];
 
         // Ensures that only the endpoint can attempt to lzReceive() messages to this OApp.
@@ -168,13 +201,19 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         IDepositsManager(depositsManager).onMessageReceived(settings.chainId, _message);
     }
 
+    /// @notice Checks if a path initialization is allowed
+    /// @param _origin Origin information of the message
+    /// @return bool Indicating if initialization is allowed
     function allowInitializePath(Origin calldata _origin) public view virtual returns (bool) {
-        Settings memory _settings = settings_messages[_origin.srcEid];
+        Settings memory _settings = settingsMessages[_origin.srcEid];
         return addressToBytes32(_settings.toAddress) == _origin.sender;
     }
 
+    /// @notice Quotes the fee for a LayerZero message
+    /// @param _destination Destination chain ID
+    /// @return uint256 The quoted fee in native currency
     function quoteLayerZero(uint32 _destination) public view returns (uint256) {
-        Settings memory settings = settings_messages[_destination];
+        Settings memory settings = settingsMessages[_destination];
         bytes32 receiver = addressToBytes32(settings.toAddress);
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200_000, 0);
         bytes memory data = abi.encode(1, 1 ether, 1 ether); // sample payload
@@ -186,34 +225,50 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
         return fee.nativeFee;
     }
 
-    /** STARGATE **/
-
-    function _sync_StartGateV1(Settings memory _settings, address _router, uint256 _amount, address _refund) internal {
+    /// @notice Internal function to handle Stargate V1 token transfers
+    /// @param _settings Transfer settings
+    /// @param _router Stargate router address
+    /// @param _amount Amount of tokens to transfer
+    /// @param _refund Address to refund excess fees
+    function _syncStartGateV1(Settings memory _settings, address _router, uint256 _amount, address _refund) internal {
         uint256 maxSlippage = _getFee(_amount, _settings.maxSlippage);
         wETH.withdraw(_amount);
-        IStargateRouterETH(_router).swapETH{value: _amount + msg.value}(
-            uint16(_settings.bridgeChainId), // send to Fuji (use LayerZero chainId)
-            payable(_refund), // refund adddress. extra gas (if any) is returned to this address
-            abi.encodePacked(_settings.toAddress), // the address to send the tokens to on the destination
-            _amount, // quantity to swap in LD, (local decimals)
-            _amount - maxSlippage // the min qty you would accept in LD (local decimals)
+        IStargateRouterETH(_router).swapETH{ value: _amount + msg.value }(
+            uint16(_settings.bridgeChainId),
+            payable(_refund),
+            abi.encodePacked(_settings.toAddress),
+            _amount,
+            _amount - maxSlippage
         );
     }
 
-    function _getFee(uint256 _amountIn, uint256 _fee) internal returns (uint256 feeAmount) {
+    /// @notice Calculates fee amount based on input and fee percentage
+    /// @param _amountIn Input amount
+    /// @param _fee Fee percentage (in PRECISION units)
+    /// @return feeAmount Calculated fee amount
+    function _getFee(uint256 _amountIn, uint256 _fee) internal pure returns (uint256 feeAmount) {
         feeAmount = (_amountIn * _fee + PRECISION_SUB_ONE) / PRECISION;
     }
 
+    /// @notice Converts bytes32 to address
+    /// @param _bytes The bytes32 value to convert
+    /// @return The resulting address
     function bytes32ToAddress(bytes32 _bytes) internal pure returns (address) {
         return address(uint160(uint256(_bytes)));
     }
 
+    /// @notice Converts address to bytes32
+    /// @param _addr The address to convert
+    /// @return The resulting bytes32 value
     function addressToBytes32(address _addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
     }
 
+    /// @notice Allows the contract to receive ETH
     receive() external payable {}
 
+    /// @notice Authorizes contract upgrades
+    /// @param _newImplementation Address of the new implementation
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
         if (_newImplementation.code.length == 0) revert InvalidContract();
     }

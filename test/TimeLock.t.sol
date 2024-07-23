@@ -5,6 +5,8 @@ import "./TestSetup.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract TimeLockTest is TestSetup {
+    error UnauthorizedService(address caller);
+
     TimelockController internal timeLock;
 
     function setUp() public override {
@@ -22,7 +24,7 @@ contract TimeLockTest is TestSetup {
 
     function test_timeLock() public {
         vm.prank(owner);
-        vm.expectRevert("Caller is not service");
+        vm.expectRevert(abi.encodeWithSelector(UnauthorizedService.selector, owner));
         depositsManagerL1.pause();
 
         vm.prank(address(timeLock));

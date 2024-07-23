@@ -13,55 +13,69 @@ pragma solidity ^0.8.26;
 // Primary Author(s)
 // Juan C. Dorado: https://github.com/jdorado/
 
-import {OFTUpgradeable} from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contracts/oft/OFTUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OFTUpgradeable } from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contracts/oft/OFTUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+/// @title Demether Open Fungible Token (DOFT)
+/// @dev Extends OFTUpgradeable for cross-chain capabilities and UUPSUpgradeable for upgradability.
+/// @notice Implements an ERC20 token with upgradability and cross-chain functionalities.
 contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+    error ImplementationIsNotContract(address newImplementation);
+    error UnauthorizedMinter(address caller);
+    error InvalidAddress();
+
     address private _minter;
 
     /// @notice Constructor with LayerZero endpoint.
     constructor(address _lzEndpoint) OFTUpgradeable(_lzEndpoint) {}
 
-    /// @notice Checks if the caller is the designated minter.
+    /// @dev Ensures that only the designated minter can execute.
     modifier onlyMinter() {
-        require(msg.sender == _minter, "Caller is not the minter");
+        if (msg.sender != _minter) {
+            revert UnauthorizedMinter(msg.sender);
+        }
         _;
     }
 
-    /// @notice Initializes the DOFT.sol contract.
-    /// @param _name The name of the token.
-    /// @param _symbol The symbol of the token.
-    /// @param _delegate The address to transfer ownership to.
-    /// @param _minterAddress The address of the minter.
+    /// @notice Initializes the contract with token name, symbol, initial delegate, and minter.
+    /// @param _name Token name.
+    /// @param _symbol Token symbol.
+    /// @param _delegate Initial owner of the token.
+    /// @param _minterAddress Address granted permission to mint and burn tokens.
     function initialize(
         string memory _name,
         string memory _symbol,
         address _delegate,
         address _minterAddress
     ) external initializer onlyProxy {
+        if (_minterAddress == address(0)) revert InvalidAddress();
         __OFT_init(_name, _symbol, _delegate);
         __Ownable_init();
         _transferOwnership(_delegate);
-        _minter = _minterAddress; // Set the minter
+        _minter = _minterAddress; // Sets the minter.
     }
 
-    /// @notice Mints tokens to the specified address.
-    /// @param _to Address to mint tokens to.
-    /// @param _amount The amount of tokens to mint.
+    /// @notice Mints tokens to a specified address.
+    /// @param _to Recipient address.
+    /// @param _amount Amount of tokens to mint.
+    /// @return True if the mint was successful.
     function mint(address _to, uint256 _amount) external onlyMinter returns (bool) {
         _mint(_to, _amount);
         return true;
     }
 
-    /// @notice Burns tokens from the specified address.
-    /// @param _from Address from which tokens will be burned.
-    /// @param _amount The amount of tokens to burn.
+    /// @notice Burns tokens from a specified address.
+    /// @param _from Source address.
+    /// @param _amount Amount of tokens to burn.
+    /// @return True if the burn was successful.
     function burn(address _from, uint256 _amount) external onlyMinter returns (bool) {
         _burn(_from, _amount);
         return true;
     }
 
+    /// @dev Authorizes the upgrade of the contract.
+    /// @param _newImplementation Address of the new contract implementation.
     function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
-        require(_newImplementation.code.length > 0, "NOT_CONTRACT");
+        if (_newImplementation.code.length == 0) revert ImplementationIsNotContract(_newImplementation);
     }
 }

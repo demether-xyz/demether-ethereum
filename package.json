@@ -5,10 +5,14 @@
   "author": "jdorado <juancamilo.dorado@gmail.com>",
   "scripts": {
     "test": "forge test -vv",
-    "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'"
+    "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
+    "lint": "solhint --max-warnings 0 \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\""
   },
   "dependencies": {
-    "prettier": "^3.3.1",
-    "prettier-plugin-solidity": "^1.3.1"
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "prettier": "^3.3.2",
+    "prettier-plugin-solidity": "^1.3.1",
+    "solhint": "^5.0.1",
+    "solhint-plugin-prettier": "^0.1.0"
   }
 }

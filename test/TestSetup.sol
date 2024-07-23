@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Test, console} from "forge-std/Test.sol";
+import { Test, console } from "forge-std/Test.sol";
 
-import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy, IDelegationManager} from "./TestSetupEigenLayer.sol";
+import { TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, IStrategy, IDelegationManager } from "./TestSetupEigenLayer.sol";
 import "@foundry-upgrades/ProxyTester.sol";
-import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
-import {frxETH} from "@frxETH/frxETH.sol";
-import {sfrxETH, ERC20 as ERC20_2} from "@frxETH/sfrxETH.sol";
-import {frxETHMinter} from "@frxETH/frxETHMinter.sol";
+import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
+import { frxETH } from "@frxETH/frxETH.sol";
+import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
+import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
 
-import {DOFT} from "../src/DOFT.sol";
-import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
-import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
-import {LiquidityPool} from "../src/LiquidityPool.sol";
-import {Messenger} from "../src/Messenger.sol";
+import { DOFT } from "../src/DOFT.sol";
+import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
+import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
+import { LiquidityPool } from "../src/LiquidityPool.sol";
+import { Messenger } from "../src/Messenger.sol";
 
 import "./mocks/WETH.sol";
 import "./mocks/MockStarGate.sol";
@@ -67,8 +67,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         frxETHtoken.addMinter(address(frxETHMinterContract));
 
         // increase sfrxETHtoken rate to 2.0
-        frxETHMinterContract.submitAndDeposit{value: 1 ether}(address(this));
-        frxETHMinterContract.submitAndGive{value: 1 ether}(address(sfrxETHtoken));
+        frxETHMinterContract.submitAndDeposit{ value: 1 ether }(address(this));
+        frxETHMinterContract.submitAndGive{ value: 1 ether }(address(sfrxETHtoken));
         vm.warp(block.timestamp + 1);
         sfrxETHtoken.syncRewards();
         vm.warp(block.timestamp + 1);
@@ -200,7 +200,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
         messengerL2.setSettingsTokens(l1Eid, IMessenger.Settings(STARGATE, l1Eid, l1Eid, address(depositsManagerL1), 10 gwei, 25e14, ""));
 
-        // todo set token peers >> test L1 to L2 transfers
+        // set token peers >> test L1 to L2 transfers
+        l1token.setPeer(l2Eid, addressToBytes32(address(l2token)));
+        l2token.setPeer(l1Eid, addressToBytes32(address(l1token)));
+
         vm.stopPrank();
     }
 
@@ -274,7 +277,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         _chainId[0] = l2Eid;
         _chainFee[0] = fee;
         vm.roll(block.number + 1);
-        depositsManagerL1.syncRate{value: fee}(_chainId, _chainFee);
+        depositsManagerL1.syncRate{ value: fee }(_chainId, _chainFee);
         _sync();
     }
 
