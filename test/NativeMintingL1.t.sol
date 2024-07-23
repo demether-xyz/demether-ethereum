@@ -58,11 +58,11 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL2.getRate(), 1 ether);
 
         // sync L2
-        _sync_rate();
+        syncRate();
         assertEq(depositsManagerL2.getRate(), 1.09 ether);
     }
 
     function test_L1_quote() public {
-        assert(messengerL1.quoteLayerZero(l2Eid) > 0);
+        assert(messengerL1.quoteLayerZero(L2_EID) > 0);
     }
 }
