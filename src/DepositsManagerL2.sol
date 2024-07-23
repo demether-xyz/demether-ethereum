@@ -75,16 +75,13 @@ contract DepositsManagerL2 is
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
-        __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        __OwnableAccessControl_init(_owner, _service);
 
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
-
-        setService(_service);
-        transferOwnership(_owner);
     }
 
     /// @notice Deposits tokens and optionally bridges to another chain
