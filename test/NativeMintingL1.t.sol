@@ -9,27 +9,28 @@ contract NativeMintingL1 is TestSetup {
         assertEq(amountOut, 100 ether);
     }
 
-    function test_L1_deposit_weth() public {
-        uint256 amount = 100 ether;
-        wETHL1.deposit{value: amount}();
-        wETHL1.approve(address(depositsManagerL1), amount);
-        depositsManagerL1.deposit(amount, address(0));
-        assertEq(wETHL1.balanceOf(address(this)), 0);
-        assertEq(l1token.balanceOf(address(this)), 100 ether);
-    }
-
     function test_L1_deposit_eth() public {
         uint256 amount = 100 ether;
         uint256 balanceBefore = address(this).balance;
-        depositsManagerL1.depositETH{value: amount}(address(0));
+        depositsManagerL1.depositETH{ value: amount }(0, 0, address(0));
         assertEq(address(this).balance, balanceBefore - amount);
         assertEq(l1token.balanceOf(address(this)), 100 ether);
     }
 
+    function test_L1_bridged_deposit_eth() public {
+        uint256 fee = 100;
+        uint256 amount = 10 ether;
+        depositsManagerL1.depositETH{ value: amount + fee }(L2_EID, fee, address(0));
+        assertEq(l1token.balanceOf(address(this)), 0);
+        assertEq(l1token.balanceOf(address(depositsManagerL1)), 0);
+        verifyPackets(L2_EID, addressToBytes32(address(l2token)));
+        assertEq(l2token.balanceOf(address(this)), amount);
+    }
+
     function test_L1_add_liquidity() public {
         assertEq(depositsManagerL1.getRate(), 1 ether);
-        depositsManagerL1.depositETH{value: 100 ether}(address(0));
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
+        depositsManagerL1.processLiquidity();
 
         // create rewards in the pool
         _rewards(10 ether);
@@ -38,16 +39,16 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
 
         // add liquidity
-        depositsManagerL1.depositETH{value: 109 ether}(address(0));
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.depositETH{ value: 109 ether }(0, 0, address(0));
+        depositsManagerL1.processLiquidity();
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
         assertEq(liquidityPool.totalAssets(), 218 ether);
         assertEq(liquidityPool.totalShares(), 200 ether);
     }
 
     function test_L1_sync_rate() public {
-        depositsManagerL1.depositETH{value: 100 ether}(address(0));
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
+        depositsManagerL1.processLiquidity();
 
         assertEq(depositsManagerL1.getRate(), 1 ether);
         assertEq(depositsManagerL2.getRate(), 1 ether);

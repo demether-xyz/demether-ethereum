@@ -9,8 +9,6 @@ import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {frxETH} from "@frxETH/frxETH.sol";
 import {sfrxETH, ERC20 as ERC20_2} from "@frxETH/sfrxETH.sol";
 import {frxETHMinter} from "@frxETH/frxETHMinter.sol";
-// import { StrategyManagerStorage } from "@eigenlayer/contracts/core/StrategyManagerStorage.sol";
-
 import {DOFT} from "../src/DOFT.sol";
 import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
 import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
@@ -23,8 +21,6 @@ import {WETH} from "./mocks/WETH.sol";
 import {MockStarGate} from "./mocks/MockStarGate.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
-    StrategyManager public strategyManager;
-
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
     uint8 public constant STARGATE_V2 = 3;
@@ -78,8 +74,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         frxETHtoken.addMinter(address(frxETHMinterContract));
 
         // increase sfrxETHtoken rate to 2.0
-        frxETHMinterContract.submitAndDeposit{value: 1 ether}(address(this));
-        frxETHMinterContract.submitAndGive{value: 1 ether}(address(sfrxETHtoken));
+        frxETHMinterContract.submitAndDeposit{ value: 1 ether }(address(this));
+        frxETHMinterContract.submitAndGive{ value: 1 ether }(address(sfrxETHtoken));
         vm.warp(block.timestamp + 1);
         sfrxETHtoken.syncRewards();
         vm.warp(block.timestamp + 1);
@@ -88,7 +84,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         wETHL1 = new WETH();
 
         // deploy DepositsManagerL1.sol
-        data = abi.encodeWithSignature("initialize(address,address,address,bool)", address(wETHL1), role.owner, role.service, true);
+        data = abi.encodeWithSignature("initialize(address,address)", role.owner, role.service);
         depositsManagerL1 = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), role.admin, data)));
         vm.label(address(depositsManagerL1), "depositsManagerL1");
 
@@ -205,7 +201,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
             L1_EID, IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
         );
 
-        // todo set token peers >> test L1 to L2 transfers
+        // set token peers >> test L1 to L2 transfers
+        l1token.setPeer(L2_EID, addressToBytes32(address(l2token)));
+        l2token.setPeer(L1_EID, addressToBytes32(address(l1token)));
+
         vm.stopPrank();
     }
 
@@ -229,9 +228,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         IStrategy[] memory _strategy = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = sfrxETHStrategy;
-        // TODO : commented temporary
-        // vm.prank(strategyManager.strategyWhitelister());
-        // strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        vm.prank(eigenLayerContracts.strategyManager.strategyWhitelister());
+        eigenLayerContracts.strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
         // register operator
         vm.startPrank(OPERATOR);

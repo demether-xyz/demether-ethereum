@@ -3,8 +3,11 @@ pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
+import "../src/OwnableAccessControl.sol";
 
 contract TimeLockTest is TestSetup {
+    error UnauthorizedService(address caller);
+
     TimelockController internal timeLock;
 
     function setUp() public override {
@@ -21,8 +24,8 @@ contract TimeLockTest is TestSetup {
     }
 
     function test_timeLock() public {
-        vm.prank(role.owner);
-        vm.expectRevert("Caller is not service");
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
         depositsManagerL1.pause();
 
         vm.prank(address(timeLock));
