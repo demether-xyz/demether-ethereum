@@ -9,8 +9,6 @@ import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import {frxETH} from "@frxETH/frxETH.sol";
 import {sfrxETH, ERC20 as ERC20_2} from "@frxETH/sfrxETH.sol";
 import {frxETHMinter} from "@frxETH/frxETHMinter.sol";
-// import { StrategyManagerStorage } from "@eigenlayer/contracts/core/StrategyManagerStorage.sol";
-
 import {DOFT} from "../src/DOFT.sol";
 import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
 import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
