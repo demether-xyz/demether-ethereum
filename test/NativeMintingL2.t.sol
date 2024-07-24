@@ -5,17 +5,10 @@ import { TestSetup } from "./TestSetup.sol";
 import { IDepositsManager } from "../src/interfaces/IDepositsManager.sol";
 import { DepositsManagerL2 } from "../src/DepositsManagerL2.sol";
 
-contract DepositManagerL2Test is TestSetup {
-    event Paused(address account);
-    event Unpaused(address account);
+contract NativeMintingL2 is TestSetup {
+    error NativeTokenNotSupported();
 
-    function setUp() public virtual override {
-        super.setUp();
-    }
-}
-
-contract NativeMintingL2 is DepositManagerL2Test {
-    function testL2MintingRate() public view {
+    function test_L2_minting_rate() public {
         uint256 amountOut = depositsManagerL2.getConversionAmount(100 ether);
         assertEq(amountOut, 99.9 ether);
     }
@@ -24,14 +17,26 @@ contract NativeMintingL2 is DepositManagerL2Test {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         assertEq(wETHL2.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
     }
 
-    function testL2DepositEth() public {
-        vm.expectRevert(DepositsManagerL2.NativeTokenNotSupported.selector);
-        depositsManagerL2.depositETH{ value: 100 ether }(address(0));
+    function test_L2_deposit_eth() public {
+        vm.expectRevert(NativeTokenNotSupported.selector);
+        depositsManagerL2.depositETH{ value: 100 ether }(0, 0, address(0));
+    }
+
+    function test_L2_bridged_deposit_weth() public {
+        uint256 fee = 100;
+        uint256 amount = 100 ether;
+        wETHL2.deposit{ value: amount }();
+        wETHL2.approve(address(depositsManagerL2), amount);
+        depositsManagerL2.deposit{ value: fee }(amount, L1_EID, fee, address(0));
+        assertEq(l2token.balanceOf(address(this)), 0);
+        assertEq(l2token.balanceOf(address(depositsManagerL1)), 0);
+        verifyPackets(L1_EID, addressToBytes32(address(l1token)));
+        assertEq(l1token.balanceOf(address(this)), 99.9 ether);
     }
 
     function testL2SyncTokens() public {
@@ -39,7 +44,7 @@ contract NativeMintingL2 is DepositManagerL2Test {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
 
@@ -56,12 +61,12 @@ contract NativeMintingL2 is DepositManagerL2Test {
     /// @dev Slippage cost higher than fee, creates a whole
     function testL2HighSlippage() public {
         // initialize the rate on L1
-        depositsManagerL1.depositETH{ value: 100 ether }(address(0));
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
+        depositsManagerL1.processLiquidity();
         assertEq(depositsManagerL1.getRate(), 1 ether);
 
-        testL2SyncTokens();
-        depositsManagerL1.addLiquidity();
+        test_L2_sync_tokens();
+        depositsManagerL1.processLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
@@ -72,9 +77,7 @@ contract NativeMintingL2 is DepositManagerL2Test {
         assertEq(missingETH, 0.1 ether);
 
         // add surplus to cover the gap
-        wETHL1.deposit{ value: 1 ether }();
-        wETHL1.transfer(address(depositsManagerL1), 1 ether);
-        depositsManagerL1.addLiquidity();
+        liquidityPool.addLiquidity{ value: 1 ether }();
 
         oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
@@ -87,8 +90,8 @@ contract NativeMintingL2 is DepositManagerL2Test {
         stargateL2.setSlippage(0);
 
         // initialize the rate on L1 + add rewards
-        depositsManagerL1.depositETH{ value: 100 ether }(address(0));
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.depositETH{ value: 100 ether }(0, 0, address(0));
+        depositsManagerL1.processLiquidity();
         _rewards(10 ether);
         assertEq(depositsManagerL1.getRate(), 1.09 ether);
 
@@ -96,14 +99,14 @@ contract NativeMintingL2 is DepositManagerL2Test {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, address(0));
+        depositsManagerL2.deposit(amount, 0, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether); // mints more than should
 
         uint256 balance = wETHL2.balanceOf(address(depositsManagerL2));
         depositsManagerL2.syncTokens{ value: 10 gwei }(balance);
         assertEq(address(depositsManagerL1).balance, 100 ether);
-        depositsManagerL1.addLiquidity();
+        depositsManagerL1.processLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
