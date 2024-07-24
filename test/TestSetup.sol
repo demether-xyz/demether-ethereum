@@ -21,8 +21,6 @@ import {WETH} from "./mocks/WETH.sol";
 import {MockStarGate} from "./mocks/MockStarGate.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
-    // StrategyManager public strategyManager;
-
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
     uint8 public constant STARGATE_V2 = 3;
