@@ -23,7 +23,7 @@ import {WETH} from "./mocks/WETH.sol";
 import {MockStarGate} from "./mocks/MockStarGate.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
-    StrategyManager public strategyManager;
+    // StrategyManager public strategyManager;
 
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
@@ -88,7 +88,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         wETHL1 = new WETH();
 
         // deploy DepositsManagerL1.sol
-        data = abi.encodeWithSignature("initialize(address,address,address,bool)", address(wETHL1), role.owner, role.service, true);
+        data = abi.encodeWithSignature("initialize(address,address)", role.owner, role.service);
         depositsManagerL1 = DepositsManagerL1(payable(proxy.deploy(address(new DepositsManagerL1()), role.admin, data)));
         vm.label(address(depositsManagerL1), "depositsManagerL1");
 
@@ -232,9 +232,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         IStrategy[] memory _strategy = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = sfrxETHStrategy;
-        // TODO : commented temporary
-        // vm.prank(strategyManager.strategyWhitelister());
-        // strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        vm.prank(eigenLayerContracts.strategyManager.strategyWhitelister());
+        eigenLayerContracts.strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
         // register operator
         vm.startPrank(OPERATOR);

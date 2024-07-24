@@ -28,6 +28,9 @@ interface ILiquidityPool {
     /// @notice Thrown when minting fails
     error MintFailed();
 
+    /// @notice Thrown when a transfer fails
+    error TransferFailed(address to);
+
     /// @notice Emitted when liquidity is added to the pool
     /// @param amount The amount of ETH added
     /// @param shares The number of shares minted
@@ -45,8 +48,10 @@ interface ILiquidityPool {
     event ProtocolFeeUpdated(uint256 newFee, address updatedBy);
 
     /// @notice Adds liquidity to the pool
-    /// @param process If true, processes the liquidity
-    function addLiquidity(bool process) external payable;
+    function addLiquidity() external payable;
+
+    /// @notice Processes liquidity in the pool
+    function processLiquidity() external payable;
 
     /// @notice Gets the current exchange rate of shares to ETH
     /// @return The current rate

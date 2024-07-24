@@ -12,12 +12,6 @@ contract LiquidityPoolTest is TestSetup {
 }
 
 contract AddLiquidityTest is LiquidityPoolTest {
-    function test_RevertWhenAddLiquidityCallerIsNotAuthorised() external {
-        vm.startPrank(role.owner);
-        vm.expectRevert(ILiquidityPool.Unauthorized.selector);
-        liquidityPool.addLiquidity(false);
-        vm.stopPrank();
-    }
 }
 
 contract SetFraxMinterTest is LiquidityPoolTest {
