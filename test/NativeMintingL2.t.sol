@@ -30,10 +30,10 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit{ value: fee }(amount, l1Eid, fee, address(0));
+        depositsManagerL2.deposit{ value: fee }(amount, L1_EID, fee, address(0));
         assertEq(l2token.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(depositsManagerL1)), 0);
-        verifyPackets(l1Eid, addressToBytes32(address(l1token)));
+        verifyPackets(L1_EID, addressToBytes32(address(l1token)));
         assertEq(l1token.balanceOf(address(this)), 99.9 ether);
     }
 

@@ -20,10 +20,10 @@ contract NativeMintingL1 is TestSetup {
     function test_L1_bridged_deposit_eth() public {
         uint256 fee = 100;
         uint256 amount = 10 ether;
-        depositsManagerL1.depositETH{ value: amount + fee }(l2Eid, fee, address(0));
+        depositsManagerL1.depositETH{ value: amount + fee }(L2_EID, fee, address(0));
         assertEq(l1token.balanceOf(address(this)), 0);
         assertEq(l1token.balanceOf(address(depositsManagerL1)), 0);
-        verifyPackets(l2Eid, addressToBytes32(address(l2token)));
+        verifyPackets(L2_EID, addressToBytes32(address(l2token)));
         assertEq(l2token.balanceOf(address(this)), amount);
     }
 
@@ -59,11 +59,11 @@ contract NativeMintingL1 is TestSetup {
         assertEq(depositsManagerL2.getRate(), 1 ether);
 
         // sync L2
-        _sync_rate();
+        syncRate();
         assertEq(depositsManagerL2.getRate(), 1.09 ether);
     }
 
-    function test_L1_quote() public view {
-        assert(messengerL1.quoteLayerZero(l2Eid) > 0);
+    function test_L1_quote() public {
+        assert(messengerL1.quoteLayerZero(L2_EID) > 0);
     }
 }
