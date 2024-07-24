@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import "./TestSetup.sol";
 import "../src/interfaces/IMessenger.sol";
+import "../src/OwnableAccessControl.sol";
 
 contract MessengerTest is TestSetup {
     function setUp() public virtual override {
@@ -32,7 +33,7 @@ contract SetSettingsMessagesTest is MessengerTest {
     function test_RevertWhenSetSettingsMessagesCallerIsNotOwner() external {
         IMessenger.Settings memory setting;
         vm.startPrank(bob);
-        vm.expectRevert(bytes("Caller is not service"));
+        vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
         messengerL1.setSettingsMessages(0, setting);
         vm.stopPrank();
     }
@@ -42,7 +43,7 @@ contract SetSettingsTokensTest is MessengerTest {
     function test_RevertWhenSetSettingsTokensCallerIsNotOwner() external {
         IMessenger.Settings memory setting;
         vm.startPrank(bob);
-        vm.expectRevert(bytes("Caller is not service"));
+        vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
         messengerL1.setSettingsTokens(0, setting);
         vm.stopPrank();
     }
@@ -69,12 +70,24 @@ contract SetRoutersTest is MessengerTest {
         vm.stopPrank();
     }
 
-    function test_RevertWhenPassedInvalidRouterAddress() external {
+    function test_RevertWhenPassedInvalidBridge() external {
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
 
         vm.startPrank(role.owner);
-        vm.expectRevert(IMessenger.InvalidAddress.selector);
+        vm.expectRevert(IMessenger.BridgeNotSupported.selector);
+        messengerL1.setRouters(_bridgeIds, _routers, address(bob));
+        vm.stopPrank();
+    }
+
+    function test_RevertWhenPassedInvalidRouterAddress() external {
+        uint8[] memory _bridgeIds = new uint8[](1);
+        address[] memory _routers = new address[](1);
+
+        _bridgeIds[0]=1;
+
+        vm.startPrank(role.owner);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         messengerL1.setRouters(_bridgeIds, _routers, address(bob));
         vm.stopPrank();
     }
@@ -86,7 +99,7 @@ contract SetRoutersTest is MessengerTest {
         _routers[0] = address(bob);
         _bridgeIds[0] = 1;
         vm.startPrank(role.owner);
-        vm.expectRevert(IMessenger.InvalidAddress.selector);
+        vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);
         messengerL1.setRouters(_bridgeIds, _routers, address(0));
         vm.stopPrank();
     }
