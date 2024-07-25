@@ -5,16 +5,10 @@ import "./TestSetup.sol";
 import "../src/interfaces/ILiquidityPool.sol";
 import "../src/OwnableAccessControl.sol";
 
-contract LiquidityPoolTest is TestSetup {
-    function setUp() public virtual override {
-        super.setUp();
-    }
+contract AddLiquidityTest is TestSetup {
 }
 
-contract AddLiquidityTest is LiquidityPoolTest {
-}
-
-contract SetFraxMinterTest is LiquidityPoolTest {
+contract SetFraxMinterTest is TestSetup {
     function test_RevertWhenSetFraxMinterCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -30,7 +24,7 @@ contract SetFraxMinterTest is LiquidityPoolTest {
     }
 }
 
-contract DelegateEigenLayerTest is LiquidityPoolTest {
+contract DelegateEigenLayerTest is TestSetup {
     function test_RevertWhenDelegateEigenLayerCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
@@ -46,7 +40,7 @@ contract DelegateEigenLayerTest is LiquidityPoolTest {
     }
 }
 
-contract SetEigenLayerTest is LiquidityPoolTest {
+contract SetEigenLayerTest is TestSetup {
     function test_RevertWhenSetEigenLayerCallerIsNotOwner() external {
         vm.startPrank(bob);
         vm.expectRevert(bytes("Ownable: caller is not the owner"));
@@ -68,7 +62,7 @@ contract SetEigenLayerTest is LiquidityPoolTest {
     }
 }
 
-contract SetProtocolFeeTest is LiquidityPoolTest {
+contract SetProtocolFeeTest is TestSetup {
     function test_SetProtocolFeeShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(liquidityPool.protocolFee(), 1e17);
@@ -94,7 +88,7 @@ contract SetProtocolFeeTest is LiquidityPoolTest {
     }
 }
 
-contract SetProtocolTreasuryTest is LiquidityPoolTest {
+contract SetProtocolTreasuryTest is TestSetup {
     function test_SetProtocolTreasuryShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(liquidityPool.protocolTreasury()), address(role.owner));

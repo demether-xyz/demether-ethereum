@@ -55,6 +55,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
 
+    event Paused(address account);
+    event Unpaused(address account);
+
     function setUpL1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
