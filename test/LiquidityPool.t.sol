@@ -114,7 +114,7 @@ contract DelegateEigenLayerTest is TestSetup {
         LiquidityPool liquidityPool1 = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), role.admin, data)));
 
         vm.expectRevert(ILiquidityPool.InvalidEigenLayerStrategy.selector);
-        liquidityPool1.delegateEigenLayer(OPERATOR);
+        liquidityPool1.delegateEigenLayer(operator);
         vm.stopPrank();
     }
 }
@@ -148,9 +148,9 @@ contract SetEigenLayerTest is TestSetup {
 
         vm.expectRevert(ILiquidityPool.LSTMintingNotSet.selector);
         liquidityPool1.setEigenLayer(
-            address(eigenLayerContracts.strategyManager),
+            address(strategyManager),
             address(address(bob)),
-            address(eigenLayerContracts.delegation)
+            address(delegation)
         );       
         vm.stopPrank();
     }
@@ -162,12 +162,12 @@ contract SetEigenLayerTest is TestSetup {
         StrategyBase sfrxETHStrategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(mockContracts.baseStrategyImplementation),
-                    address(eigenLayerContracts.eigenLayerProxyAdmin),
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         StrategyBase.initialize.selector,
                         sfrxETHtoken,
-                        eigenLayerContracts.eigenLayerPauserReg
+                        eigenLayerPauserReg
                     )
                 )
             )
