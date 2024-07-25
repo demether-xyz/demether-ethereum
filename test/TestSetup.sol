@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Test } from "forge-std/Test.sol";
+import { Test, console } from "forge-std/Test.sol";
 
 import { TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, StrategyManager } from "./TestSetupEigenLayer.sol";
 import { ProxyTester } from "@foundry-upgrades/ProxyTester.sol";
@@ -28,6 +28,8 @@ import { MockStarGate } from "./mocks/MockStarGate.sol";
 import { MockCurvePool } from "./mocks/MockCurvePool.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
+    bool internal fork_active;
+
     uint8 public constant LAYERZERO = 1;
     uint8 public constant STARGATE = 2;
     uint8 public constant STARGATE_V2 = 3;
@@ -186,7 +188,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
                 address(messengerL2),
                 10 gwei,
                 0,
-                abi.encode(200_000) // gas as uint128
+                abi.encode(200_000), // gas as uint128
+                true // native ETH
             )
         );
 
@@ -213,14 +216,15 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
                 address(messengerL1),
                 10 gwei,
                 0,
-                abi.encode(200_000) // gas as uint128
+                abi.encode(200_000), // gas as uint128
+                true // native ETH
             )
         );
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
         messengerL2.setSettingsTokens(
             L1_EID,
-            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
+            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "", true)
         );
 
         // set token peers >> test L1 to L2 transfers
@@ -268,6 +272,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     }
 
     function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {
+        try vm.activeFork() {
+            fork_active = true;
+        } catch {}
+
         role.admin = vm.addr(uint256(0x123));
         vm.label(role.admin, "Admin");
 

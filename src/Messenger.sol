@@ -22,12 +22,14 @@ import {
     MessagingReceipt,
     Origin
 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { SendParam, MessagingFee, OFTReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
 
 import { IMessenger } from "./interfaces/IMessenger.sol";
 import { IWETH9 } from "./interfaces/IWETH9.sol";
 import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
 import { IStargateRouterETH } from "./interfaces/IStargateRouterETH.sol";
+import { IStargate, Ticket } from "./interfaces/IStargate.sol";
 import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
 /// @title Messenger
@@ -79,6 +81,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     }
 
     /// @notice Transfers tokens across chains
+    /// @dev DepositManager must send WETH to transfer tokens
     /// @param _destination Destination chain ID
     /// @param _amount Amount of tokens to transfer
     /// @param _refund Address to refund excess fees
@@ -90,12 +93,16 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
 
         emit SyncTokens(_destination, settings.bridgeId, _amount, settings.maxSlippage);
 
+        // transfer WETH
+        if (!wETH.transferFrom(msg.sender, address(this), _amount)) revert DepositFailed(msg.sender, _amount);
+
         address router = routers[settings.bridgeId];
         if (settings.bridgeId == 0 || settings.toAddress == address(0) || router == address(0)) {
             revert BridgeNotSupported();
         } else if (settings.bridgeId == STARGATE) {
-            if (!wETH.transferFrom(msg.sender, address(this), _amount)) revert DepositFailed(msg.sender, _amount);
             _syncStartGateV1(settings, router, _amount, _refund);
+        } else if (settings.bridgeId == STARGATE_V2) {
+            _syncStartGateV2(settings, router, _amount, _refund);
         }
     }
 
@@ -232,14 +239,82 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _refund Address to refund excess fees
     function _syncStartGateV1(Settings memory _settings, address _router, uint256 _amount, address _refund) internal {
         uint256 maxSlippage = _getFee(_amount, _settings.maxSlippage);
-        wETH.withdraw(_amount);
-        IStargateRouterETH(_router).swapETH{ value: _amount + msg.value }(
+
+        // determine value to send and withdraw WETH if needed
+        uint256 valueToSend = msg.value;
+        if (_settings.nativeTransfer) {
+            valueToSend += _amount;
+            wETH.withdraw(_amount);
+        } else {
+            if (!wETH.approve(_router, _amount)) revert ApprovalFailed();
+        }
+
+        IStargateRouterETH(_router).swapETH{ value: valueToSend }(
             uint16(_settings.bridgeChainId),
             payable(_refund),
             abi.encodePacked(_settings.toAddress),
             _amount,
             _amount - maxSlippage
         );
+    }
+
+    /// @notice Internal function to handle Stargate V2 token transfers
+    /// @dev ref: https://stargateprotocol.gitbook.io/stargate/v/v2-developer-docs/integrate-with-stargate/how-to-swap
+    /// @param _settings Transfer settings
+    /// @param _router Stargate router address
+    /// @param _amount Amount of tokens to transfer
+    /// @param _refund Address to refund excess fees
+    function _syncStartGateV2(Settings memory _settings, address _router, uint256 _amount, address _refund) internal {
+        uint256 maxSlippage = _getFee(_amount, _settings.maxSlippage);
+
+        // determine value to send and withdraw WETH if needed
+        uint256 valueToSend = msg.value;
+        if (_settings.nativeTransfer) {
+            valueToSend += _amount;
+            wETH.withdraw(_amount);
+        } else {
+            if (!wETH.approve(_router, _amount)) revert ApprovalFailed();
+        }
+
+        SendParam memory sendParam = SendParam({
+            dstEid: uint16(_settings.bridgeChainId), // Destination endpoint ID.
+            to: addressToBytes32(_settings.toAddress), // Recipient address.
+            amountLD: _amount, // Amount to send in local decimals.
+            minAmountLD: _amount - maxSlippage, // Minimum amount to send in local decimals.
+            extraOptions: new bytes(0), // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: new bytes(0), // The composed message for the send() operation.
+            oftCmd: new bytes(1) // "" for taxi & "new bytes(1)" for bus mode
+        });
+        MessagingFee memory messagingFee = MessagingFee({ nativeFee: msg.value, lzTokenFee: 0 });
+        // slither-disable-next-line unused-return,reentrancy-events
+        (, , Ticket memory ticket) = IStargate(_router).sendToken{ value: valueToSend }(sendParam, messagingFee, _refund);
+        if (ticket.ticketId == 0) revert SyncTokensFailed();
+        emit StarGateSwap(ticket.ticketId, _amount);
+    }
+
+    /// @notice Quotes the fee for a StarGate v2 swap
+    /// @param _destination Destination chain ID
+    /// @param _amount Amount of tokens to transfer
+    /// @return uint256 The quoted fee in native currency, and the amount to receive
+    function quoteStarGate(uint32 _destination, uint256 _amount) public view returns (uint256, uint256) {
+        Settings memory settings = settingsTokens[_destination];
+        address router = routers[settings.bridgeId];
+
+        SendParam memory sendParam = SendParam({
+            dstEid: uint16(settings.bridgeChainId), // Destination endpoint ID.
+            to: addressToBytes32(settings.toAddress), // Recipient address.
+            amountLD: _amount, // Amount to send in local decimals.
+            minAmountLD: _amount, // Minimum amount to send in local decimals.
+            extraOptions: new bytes(0), // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: new bytes(0), // The composed message for the send() operation.
+            oftCmd: new bytes(1) // "" for taxi & "new bytes(1)" for bus mode
+        });
+
+        // slither-disable-next-line unused-return
+        (, , OFTReceipt memory receipt) = IStargate(router).quoteOFT(sendParam);
+        MessagingFee memory messagingFee = IStargate(router).quoteSend(sendParam, false);
+
+        return (messagingFee.nativeFee, receipt.amountReceivedLD);
     }
 
     /// @notice Calculates fee amount based on input and fee percentage

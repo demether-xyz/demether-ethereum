@@ -9,7 +9,6 @@ interface ICurveEMAOracle {
 }
 
 contract FraxETHTest is TestSetup {
-    bool internal fork_active;
     ICurveEMAOracle public curveOracle;
 
     uint256 constant PRICE_PRECISION = 1e18;
@@ -17,12 +16,8 @@ contract FraxETHTest is TestSetup {
     uint256 constant MAX_PRICE = 1e18; // 1 in 1e18 precision
 
     function setUp() public override {
-        try vm.activeFork() {
-            fork_active = true;
-        } catch {}
-        if (!fork_active) return;
-
         super.setUp();
+        if (!fork_active) return;
 
         curveOracle = ICurveEMAOracle(0xa1F8A6807c402E4A15ef4EBa36528A3FED24E577);
     }
