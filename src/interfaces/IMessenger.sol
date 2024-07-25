@@ -42,12 +42,20 @@ interface IMessenger {
     /// @notice Thrown when sending a message fails
     error SendMessageFailed();
 
+    /// @notice Thrown when synchronizing tokens across chains fails
+    error SyncTokensFailed();
+
     /// @notice Emitted when tokens are synchronized across chains
     /// @param chainId The destination chain ID
     /// @param bridgeId The ID of the bridge used
     /// @param amount The amount of tokens synchronized
     /// @param slippage The maximum slippage allowed
     event SyncTokens(uint32 indexed chainId, uint8 bridgeId, uint256 amount, uint256 slippage);
+
+    /// @notice Emitted when tokens is sent across StarGate v2
+    /// @param ticketId The ticket ID of the transaction
+    /// @param amount The amount of tokens sent
+    event StarGateSwap(uint72 ticketId, uint256 amount);
 
     /// @notice Settings structure for cross-chain operations
     struct Settings {
@@ -58,6 +66,7 @@ interface IMessenger {
         uint256 minFee; // Minimum fee required for the operation
         uint256 maxSlippage; // Maximum allowed slippage
         bytes options; // Additional options for the transfer
+        bool nativeTransfer; // Whether the transfer is in native token on the source chain
     }
 
     /// @notice Synchronizes tokens across chains
