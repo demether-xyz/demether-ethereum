@@ -43,6 +43,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     Role internal role;
 
     address public bob = makeAddr("bob");
+    address public alice = makeAddr("alice");
+    address public charlie = makeAddr("charlie");
 
     ProxyTester internal proxy = new ProxyTester();
     bytes internal data;
