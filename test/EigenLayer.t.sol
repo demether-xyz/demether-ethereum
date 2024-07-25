@@ -5,7 +5,7 @@ import "./TestSetup.sol";
 
 contract EigenLayerTest is TestSetup {
     function test_EigenLayer_delegate() public {
-        vm.prank(owner);
+        vm.prank(role.owner);
         liquidityPool.delegateEigenLayer(operator);
     }
 }
