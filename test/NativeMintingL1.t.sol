@@ -6,16 +6,7 @@ import { IDepositsManager } from "../src/interfaces/IDepositsManager.sol";
 import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { OwnableAccessControl } from "../src/OwnableAccessControl.sol";
 
-contract DepositManagerL1Test is TestSetup {
-    event Paused(address account);
-    event Unpaused(address account);
-
-    function setUp() public virtual override {
-        super.setUp();
-    }
-}
-
-contract NativeMintingL1 is DepositManagerL1Test {
+contract NativeMintingL1 is TestSetup {
     function testL1MintingRate() public {
         uint256 amountOut = depositsManagerL1.getConversionAmount(100 ether);
         assertEq(amountOut, 100 ether);
@@ -80,7 +71,7 @@ contract NativeMintingL1 is DepositManagerL1Test {
     }
 }
 
-contract DepositTestL1 is DepositManagerL1Test {
+contract DepositTestL1 is TestSetup {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(role.owner);
         depositsManagerL1.pause();
@@ -98,7 +89,7 @@ contract DepositTestL1 is DepositManagerL1Test {
     }
 }
 
-contract DepositETHTestL1 is DepositManagerL1Test {
+contract DepositETHTestL1 is TestSetup {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(role.owner);
         depositsManagerL1.pause();
@@ -116,13 +107,13 @@ contract DepositETHTestL1 is DepositManagerL1Test {
     }
 }
 
-contract GetRateL1Test is DepositManagerL1Test {
+contract GetRateL1Test is TestSetup {
     function test_GetRateShouldWorkCorrectly() external {
         assertEq(depositsManagerL1.getRate(), liquidityPool.getRate());
     }
 }
 
-contract SyncRateL1Test is DepositManagerL1Test {
+contract SyncRateL1Test is TestSetup {
     uint32[] _chainId1 = new uint32[](1);
     uint256[] _chainFee1 = new uint256[](1);
     uint256 fee;
@@ -155,14 +146,14 @@ contract SyncRateL1Test is DepositManagerL1Test {
     }
 }
 
-contract OnMessageReceivedL1Test is DepositManagerL1Test {
+contract OnMessageReceivedL1Test is TestSetup {
     function test_OnMessageReceivedShouldWorkCorrectly() external {
         vm.expectRevert(IDepositsManager.NotImplemented.selector);
         depositsManagerL1.onMessageReceived(1, bytes(""));
     }
 }
 
-contract SetTokenL1Test is DepositManagerL1Test {
+contract SetTokenL1Test is TestSetup {
     function test_SetTokenShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(depositsManagerL1.token()), address(l1token));
@@ -188,7 +179,7 @@ contract SetTokenL1Test is DepositManagerL1Test {
     }
 }
 
-contract SetLiquidityPoolL1Test is DepositManagerL1Test {
+contract SetLiquidityPoolL1Test is TestSetup {
     function test_SetLiquidityPoolShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(depositsManagerL1.pool()), address(liquidityPool));
@@ -214,7 +205,7 @@ contract SetLiquidityPoolL1Test is DepositManagerL1Test {
     }
 }
 
-contract SetMessengerL1Test is DepositManagerL1Test {
+contract SetMessengerL1Test is TestSetup {
     function test_SetMessengerShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(depositsManagerL1.messenger()), address(messengerL1));
@@ -240,7 +231,7 @@ contract SetMessengerL1Test is DepositManagerL1Test {
     }
 }
 
-contract PauseL1Test is DepositManagerL1Test {
+contract PauseL1Test is TestSetup {
     function test_PauseShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(depositsManagerL1.paused(), false);
@@ -270,7 +261,7 @@ contract PauseL1Test is DepositManagerL1Test {
     }
 }
 
-contract UnpauseL1Test is DepositManagerL1Test {
+contract UnpauseL1Test is TestSetup {
     function test_UnpauseShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         depositsManagerL1.pause();

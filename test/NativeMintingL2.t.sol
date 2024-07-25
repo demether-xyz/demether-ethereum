@@ -6,16 +6,7 @@ import { IDepositsManager } from "../src/interfaces/IDepositsManager.sol";
 import { DepositsManagerL2 } from "../src/DepositsManagerL2.sol";
 import { OwnableAccessControl } from "../src/OwnableAccessControl.sol";
 
-contract DepositManagerL2Test is TestSetup {
-    event Paused(address account);
-    event Unpaused(address account);
-
-    function setUp() public virtual override {
-        super.setUp();
-    }
-}
-
-contract NativeMintingL2 is DepositManagerL2Test {
+contract NativeMintingL2 is TestSetup {
     error NativeTokenNotSupported();
 
     function test_L2_minting_rate() public {
@@ -128,7 +119,7 @@ contract NativeMintingL2 is DepositManagerL2Test {
     }
 }
 
-contract DepositTestL2 is DepositManagerL2Test {
+contract DepositTestL2 is TestSetup {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(role.owner);
         depositsManagerL2.pause();
@@ -146,7 +137,7 @@ contract DepositTestL2 is DepositManagerL2Test {
     }
 }
 
-contract DepositETHTestL2 is DepositManagerL2Test {
+contract DepositETHTestL2 is TestSetup {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(role.owner);
         depositsManagerL2.pause();
@@ -175,13 +166,13 @@ contract DepositETHTestL2 is DepositManagerL2Test {
     }
 }
 
-contract GetRateL2Test is DepositManagerL2Test {
+contract GetRateL2Test is TestSetup {
     function test_GetRateShouldWorkCorrectly() external {
         assertEq(depositsManagerL2.getRate(), 1 ether);
     }
 }
 
-contract SyncTokensTest is DepositManagerL2Test {
+contract SyncTokensTest is TestSetup {
     function test_RevertWhenContractIsPaused() external {
         vm.startPrank(role.owner);
         depositsManagerL2.pause();
@@ -199,7 +190,7 @@ contract SyncTokensTest is DepositManagerL2Test {
     }
 }
 
-contract OnMessageReceivedL2Test is DepositManagerL2Test {
+contract OnMessageReceivedL2Test is TestSetup {
     function test_RevertWhenCalledByNonMessenger() external {
         vm.startPrank(bob);
         vm.expectRevert(IDepositsManager.Unauthorized.selector);
@@ -230,7 +221,7 @@ contract OnMessageReceivedL2Test is DepositManagerL2Test {
     }
 }
 
-contract SetTokenL2Test is DepositManagerL2Test {
+contract SetTokenL2Test is TestSetup {
     function test_SetTokenShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(depositsManagerL2.token()), address(l2token));
@@ -256,7 +247,7 @@ contract SetTokenL2Test is DepositManagerL2Test {
     }
 }
 
-contract SetMessengerL2Test is DepositManagerL2Test {
+contract SetMessengerL2Test is TestSetup {
     function test_SetMessengerShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(address(depositsManagerL2.messenger()), address(messengerL2));
@@ -285,7 +276,7 @@ contract SetMessengerL2Test is DepositManagerL2Test {
     }
 }
 
-contract PauseL2Test is DepositManagerL2Test {
+contract PauseL2Test is TestSetup {
     function test_PauseShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         assertEq(depositsManagerL2.paused(), false);
@@ -313,7 +304,7 @@ contract PauseL2Test is DepositManagerL2Test {
     }
 }
 
-contract UnpauseL2Test is DepositManagerL2Test {
+contract UnpauseL2Test is TestSetup {
     function test_UnpauseShouldWorkCorrectly() external {
         vm.startPrank(role.owner);
         depositsManagerL2.pause();

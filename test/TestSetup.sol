@@ -57,6 +57,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
 
+    event Paused(address account);
+    event Unpaused(address account);
+
     function setUpL1() public {
         // LayerZero endpoints
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
@@ -217,10 +220,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         StrategyBase sfrxETHStrategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(mockContracts.baseStrategyImplementation),
-                    address(eigenLayerContracts.eigenLayerProxyAdmin),
+                    address(baseStrategyImplementation),
+                    address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
-                        StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerContracts.eigenLayerPauserReg
+                        StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerPauserReg
                     )
                 )
             )
@@ -230,26 +233,26 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         IStrategy[] memory _strategy = new IStrategy[](1);
         bool[] memory _thirdPartyTransfersForbiddenValues = new bool[](1);
         _strategy[0] = sfrxETHStrategy;
-        vm.prank(eigenLayerContracts.strategyManager.strategyWhitelister());
-        eigenLayerContracts.strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
+        vm.prank(strategyManager.strategyWhitelister());
+        strategyManager.addStrategiesToDepositWhitelist(_strategy, _thirdPartyTransfersForbiddenValues);
 
         // register operator
-        vm.startPrank(OPERATOR);
+        vm.startPrank(operator);
         IDelegationManager.OperatorDetails memory operatorDetails = IDelegationManager.OperatorDetails({
             __deprecated_earningsReceiver: address(0),
             delegationApprover: address(0),
             stakerOptOutWindowBlocks: 0
         });
         string memory emptyStringForMetadataURI;
-        eigenLayerContracts.delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
+        delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
         vm.stopPrank();
 
         // set-up EigenLayer
         vm.prank(role.owner);
         liquidityPool.setEigenLayer(
-            address(eigenLayerContracts.strategyManager),
+            address(strategyManager),
             address(sfrxETHStrategy),
-            address(eigenLayerContracts.delegation)
+            address(delegation)
         );
     }
 

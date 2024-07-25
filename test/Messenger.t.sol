@@ -5,13 +5,7 @@ import "./TestSetup.sol";
 import "../src/interfaces/IMessenger.sol";
 import "../src/OwnableAccessControl.sol";
 
-contract MessengerTest is TestSetup {
-    function setUp() public virtual override {
-        super.setUp();
-    }
-}
-
-contract SyncTokensTest is MessengerTest {
+contract SyncTokensTest is TestSetup {
     function test_RevertWhenSyncTokensCallerIsNotAuthorised() external {
         vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.Unauthorized.selector);
@@ -20,7 +14,7 @@ contract SyncTokensTest is MessengerTest {
     }
 }
 
-contract SyncMessageTest is MessengerTest {
+contract SyncMessageTest is TestSetup {
     function test_RevertWhenSyncMessageCallerIsNotAuthorised() external {
         vm.startPrank(role.owner);
         vm.expectRevert(IMessenger.Unauthorized.selector);
@@ -29,7 +23,7 @@ contract SyncMessageTest is MessengerTest {
     }
 }
 
-contract SetSettingsMessagesTest is MessengerTest {
+contract SetSettingsMessagesTest is TestSetup {
     function test_RevertWhenSetSettingsMessagesCallerIsNotOwner() external {
         IMessenger.Settings memory setting;
         vm.startPrank(bob);
@@ -39,7 +33,7 @@ contract SetSettingsMessagesTest is MessengerTest {
     }
 }
 
-contract SetSettingsTokensTest is MessengerTest {
+contract SetSettingsTokensTest is TestSetup {
     function test_RevertWhenSetSettingsTokensCallerIsNotOwner() external {
         IMessenger.Settings memory setting;
         vm.startPrank(bob);
@@ -49,7 +43,7 @@ contract SetSettingsTokensTest is MessengerTest {
     }
 }
 
-contract SetRoutersTest is MessengerTest {
+contract SetRoutersTest is TestSetup {
     function test_RevertWhenSetRoutersCallerIsNotOwner() external {
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
