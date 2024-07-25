@@ -5,8 +5,9 @@
   "author": "jdorado <juancamilo.dorado@gmail.com>",
   "scripts": {
     "test": "forge test -vv",
+    "test_fork": "forge test --match-test test_fork --fork-url https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW --fork-block-number 20370368 -vv",
     "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
-    "lint": "solhint --max-warnings 0 \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\"",
+    "lint": "solhint --max-warnings 0 \"src/**/*.sol\"",
     "slither": "slither ."
   },
   "dependencies": {

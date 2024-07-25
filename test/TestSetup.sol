@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
-import {TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, StrategyManager} from "./TestSetupEigenLayer.sol";
-import {ProxyTester} from "@foundry-upgrades/ProxyTester.sol";
-import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
-import {frxETH} from "@frxETH/frxETH.sol";
-import {sfrxETH, ERC20 as ERC20_2} from "@frxETH/sfrxETH.sol";
-import {frxETHMinter} from "@frxETH/frxETHMinter.sol";
-import {DOFT} from "../src/DOFT.sol";
-import {DepositsManagerL1} from "../src/DepositsManagerL1.sol";
-import {DepositsManagerL2, IMessenger} from "../src/DepositsManagerL2.sol";
-import {LiquidityPool} from "../src/LiquidityPool.sol";
-import {Messenger} from "../src/Messenger.sol";
-import {IStrategy} from "@eigenlayer/contracts/interfaces/IStrategy.sol";
-import {IDelegationManager} from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
+import { TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, StrategyManager } from "./TestSetupEigenLayer.sol";
+import { ProxyTester } from "@foundry-upgrades/ProxyTester.sol";
+import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
+import { frxETH } from "@frxETH/frxETH.sol";
+import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
+import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
+import { DOFT } from "../src/DOFT.sol";
+import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
+import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
+import { LiquidityPool } from "../src/LiquidityPool.sol";
+import { Messenger } from "../src/Messenger.sol";
+import { IStrategy } from "@eigenlayer/contracts/interfaces/IStrategy.sol";
+import { IDelegationManager } from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 
-import {WETH} from "./mocks/WETH.sol";
-import {MockStarGate} from "./mocks/MockStarGate.sol";
+import { DOFT } from "../src/DOFT.sol";
+import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
+import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
+import { LiquidityPool } from "../src/LiquidityPool.sol";
+import { Messenger } from "../src/Messenger.sol";
+
+import { WETH } from "./mocks/WETH.sol";
+import { MockStarGate } from "./mocks/MockStarGate.sol";
+import { MockCurvePool } from "./mocks/MockCurvePool.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     uint8 public constant LAYERZERO = 1;
@@ -109,7 +116,11 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // deploy Messenger
         data = abi.encodeWithSignature(
-            "initialize(address,address,address,address)", address(wETHL1), address(depositsManagerL1), role.owner, role.service
+            "initialize(address,address,address,address)",
+            address(wETHL1),
+            address(depositsManagerL1),
+            role.owner,
+            role.service
         );
         messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL1), "messengerL1");
@@ -137,7 +148,11 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // deploy Messenger
         data = abi.encodeWithSignature(
-            "initialize(address,address,address,address)", address(wETHL2), address(depositsManagerL2), role.owner, role.service
+            "initialize(address,address,address,address)",
+            address(wETHL2),
+            address(depositsManagerL2),
+            role.owner,
+            role.service
         );
         messengerL2 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL2), "messengerL2");
@@ -151,6 +166,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
         liquidityPool.setFraxMinter(address(frxETHMinterContract));
+        liquidityPool.setCurvePool(address(new MockCurvePool()));
 
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
@@ -201,7 +217,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
         messengerL2.setSettingsTokens(
-            L1_EID, IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
+            L1_EID,
+            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "")
         );
 
         // set token peers >> test L1 to L2 transfers
@@ -220,9 +237,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerPauserReg
-                    )
+                    abi.encodeWithSelector(StrategyBase.initialize.selector, sfrxETHtoken, eigenLayerPauserReg)
                 )
             )
         );
@@ -247,11 +262,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
 
         // set-up EigenLayer
         vm.prank(role.owner);
-        liquidityPool.setEigenLayer(
-            address(strategyManager),
-            address(sfrxETHStrategy),
-            address(delegation)
-        );
+        liquidityPool.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
     }
 
     function setUp() public virtual override(TestSetupEigenLayer, TestHelper) {
@@ -287,7 +298,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         _chainId[0] = L2_EID;
         _chainFee[0] = fee;
         vm.roll(block.number + 1);
-        depositsManagerL1.syncRate{value: fee}(_chainId, _chainFee);
+        depositsManagerL1.syncRate{ value: fee }(_chainId, _chainFee);
         sync();
     }
 
