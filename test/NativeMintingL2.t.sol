@@ -156,8 +156,7 @@ contract DepositETHTestL2 is TestSetup {
 
     function test_RevertWhenPassedZeroETH() external {
         data = abi.encodeWithSignature("initialize(address,address,address,bool)", address(wETHL2), role.owner, role.service, true);
-        DepositsManagerL2 depositsManager =
-            DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), role.admin, data)));
+        DepositsManagerL2 depositsManager = DepositsManagerL2(payable(proxy.deploy(address(new DepositsManagerL2()), role.admin, data)));
 
         vm.startPrank(role.owner);
         vm.expectRevert(IDepositsManager.InvalidAmount.selector);

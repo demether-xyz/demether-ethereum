@@ -78,7 +78,7 @@ contract SetRoutersTest is TestSetup {
         uint8[] memory _bridgeIds = new uint8[](1);
         address[] memory _routers = new address[](1);
 
-        _bridgeIds[0]=1;
+        _bridgeIds[0] = 1;
 
         vm.startPrank(role.owner);
         vm.expectRevert(OwnableAccessControl.InvalidAddress.selector);

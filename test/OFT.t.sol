@@ -16,7 +16,15 @@ contract OFTTest is TestSetup {
         // bridge to L2
         uint256 toSend = 10 ether;
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(10 gwei, 0);
-        SendParamUpgradable memory sendParam = SendParamUpgradable(L2_EID, addressToBytes32(address(this)), toSend, toSend, options, "", "");
+        SendParamUpgradable memory sendParam = SendParamUpgradable(
+            L2_EID,
+            addressToBytes32(address(this)),
+            toSend,
+            toSend,
+            options,
+            "",
+            ""
+        );
         MessagingFee memory fee = l1token.quoteSend(sendParam, false);
 
         // transfer

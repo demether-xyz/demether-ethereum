@@ -131,7 +131,7 @@ contract SyncRateL1Test is TestSetup {
         vm.stopPrank();
 
         vm.expectRevert(bytes("Pausable: paused"));
-        depositsManagerL1.syncRate{value: fee}(_chainId1, _chainFee1);
+        depositsManagerL1.syncRate{ value: fee }(_chainId1, _chainFee1);
     }
 
     function test_RevertWhenInvalidArraysPassed() external {
@@ -139,10 +139,10 @@ contract SyncRateL1Test is TestSetup {
         uint256[] memory _chainFee2 = new uint256[](2);
 
         vm.expectRevert(IDepositsManager.InvalidParametersLength.selector);
-        depositsManagerL1.syncRate{value: fee}(_chainId2, _chainFee1);
+        depositsManagerL1.syncRate{ value: fee }(_chainId2, _chainFee1);
 
         vm.expectRevert(IDepositsManager.InvalidParametersLength.selector);
-        depositsManagerL1.syncRate{value: fee}(_chainId1, _chainFee2);
+        depositsManagerL1.syncRate{ value: fee }(_chainId1, _chainFee2);
     }
 }
 
