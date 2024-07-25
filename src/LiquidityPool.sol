@@ -71,7 +71,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     IDelegationManager public eigenLayerDelegationManager;
 
     /// @notice Curve pool for frxETH to ETH conversion
-    ICurvePool public frxETH_curvePool;
+    ICurvePool public frxETHCurvePool;
 
     /// @dev Initializes the contract
     /// @param _depositsManager Address authorized to manage deposits
@@ -148,8 +148,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
         // Convert frxETH to ETH using Curve pool price
         uint256 ethBalance;
-        if (address(frxETH_curvePool) != address(0)) {
-            uint256 frxETHPrice = frxETH_curvePool.get_p();
+        if (address(frxETHCurvePool) != address(0)) {
+            uint256 frxETHPrice = frxETHCurvePool.get_p();
             ethBalance = (frxETHBalance * frxETHPrice) / PRECISION;
         } else {
             ethBalance = frxETHBalance; // Fallback to 1:1 if Curve pool is not set
@@ -241,7 +241,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @param _curvePool The address of the Curve pool contract
     function setCurvePool(address _curvePool) external onlyOwner {
         if (_curvePool == address(0)) revert InvalidAddress();
-        frxETH_curvePool = ICurvePool(_curvePool);
+        frxETHCurvePool = ICurvePool(_curvePool);
     }
 
     /// @notice Sets EigenLayer contracts
