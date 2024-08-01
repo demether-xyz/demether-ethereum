@@ -31,7 +31,7 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard {
 
     /* ============ Constructor ============ */
 
-    constructor(IERC20 _reward, bytes32 _totalRewardMerkleRoot) {
+    constructor(IERC20 _reward, bytes32 _totalRewardMerkleRoot) Ownable(){
         rewardToken = _reward;
         totalRewardMerkleRoot = _totalRewardMerkleRoot;
         claimStartTime = block.timestamp;
