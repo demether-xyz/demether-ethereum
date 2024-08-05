@@ -31,6 +31,9 @@ interface ILiquidityPool {
     /// @notice Thrown when a transfer fails
     error TransferFailed(address to);
 
+    /// @notice Thrown when an invalid strategy is provided
+    error InvalidStrategy();
+
     /// @notice Emitted when liquidity is added to the pool
     /// @param amount The amount of ETH added
     /// @param shares The number of shares minted
@@ -56,4 +59,7 @@ interface ILiquidityPool {
     /// @notice Gets the current exchange rate of shares to ETH
     /// @return The current rate
     function getRate() external view returns (uint256);
+
+    /// @notice Determines which strategy to use
+    event StrategySet(uint8 newStrategy);
 }
