@@ -79,7 +79,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _owner Address of the contract owner.
     /// @param _service Address of the service account.
     function __Messenger_init(address _wETH, address _depositsManager, address _owner, address _service) internal onlyInitializing {
-        __OwnableAccessControl_init(_owner, _service);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __Messenger_init_unchained(_wETH, _depositsManager, _owner, _service);
     }

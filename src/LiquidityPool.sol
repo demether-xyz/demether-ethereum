@@ -87,7 +87,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     ///@param _owner Contract owner address.
     ///@param _service Service address for access control.
     function __LiquidityPool_init(address _depositsManager, address payable _owner, address _service) internal onlyInitializing {
-        __OwnableAccessControl_init(_owner, _service);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __LiquidityPool_init_unchained(_depositsManager, _owner, _service);
     }
