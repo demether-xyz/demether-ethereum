@@ -146,7 +146,7 @@ contract DepositsManagerL1 is
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         if (address(messenger) == address(0)) revert InstanceNotSet();
 
-        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
+        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, block.timestamp, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
             // slither-disable-next-line arbitrary-send-eth,calls-loop

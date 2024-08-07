@@ -67,6 +67,12 @@ contract DepositsManagerL2 is
     /// @notice Block number of the last rate sync
     uint256 public rateSyncBlock;
 
+    /// @notice Block timestamp of the last rate sync
+    uint256 public rateSyncTimestamp;
+
+    /// @notice Maximum allowed time (in seconds) for rate staleness
+    uint256 public maxRateStaleness;
+
     /// @notice Initializes the contract with essential parameters
     /// @param _wETH Address of the Wrapped ETH contract
     /// @param _owner Address of the contract owner
@@ -82,6 +88,7 @@ contract DepositsManagerL2 is
 
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
+        maxRateStaleness = 3 days;
     }
 
     /// @notice Deposits tokens and optionally bridges to another chain
@@ -168,6 +175,13 @@ contract DepositsManagerL2 is
     /// @return amountOut Converted output amount
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
+
+        // Check if the rate is stale
+        // slither-disable-next-line timestamp
+        if (block.timestamp - rateSyncTimestamp > maxRateStaleness) {
+            revert RateStale();
+        }
+
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
@@ -194,11 +208,12 @@ contract DepositsManagerL2 is
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
         if (code == MESSAGE_SYNC_RATE) {
-            (, uint256 _block, uint256 _rate) = abi.decode(_message, (uint256, uint256, uint256));
+            (, uint256 _block, uint256 _timestamp, uint256 _rate) = abi.decode(_message, (uint256, uint256, uint256, uint256));
             if (_block > rateSyncBlock) {
                 rate = _rate;
                 rateSyncBlock = _block;
-                emit RateUpdated(_rate, _block);
+                rateSyncTimestamp = _timestamp;
+                emit RateUpdated(_rate, _block, _timestamp);
             }
         } else {
             revert InvalidMessageCode();
@@ -211,6 +226,13 @@ contract DepositsManagerL2 is
         if (_fee > PRECISION) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
+    }
+
+    /// @notice Sets the maximum allowed time for rate staleness
+    /// @param _maxStaleness Maximum staleness time in seconds
+    function setMaxRateStaleness(uint256 _maxStaleness) external onlyOwner {
+        maxRateStaleness = _maxStaleness;
+        emit MaxRateStalenessUpdated(_maxStaleness);
     }
 
     /// @notice Sets the token contract address
