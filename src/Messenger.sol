@@ -67,11 +67,34 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _owner Address of the contract owner
     /// @param _service Address of the service account
     function initialize(address _wETH, address _depositsManager, address _owner, address _service) external initializer onlyProxy {
-        if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
+        if (_wETH == address(0) || _depositsManager == address(0) || _owner == address(0) || _service == address(0))
+            revert InvalidAddress();
 
-        __Ownable_init();
+        __Messenger_init(_wETH, _depositsManager, _owner, _service);
+    }
+
+    /// @notice Internal function to initialize the contract.
+    /// @param _wETH Address of the WETH contract.
+    /// @param _depositsManager Address of the deposits manager.
+    /// @param _owner Address of the contract owner.
+    /// @param _service Address of the service account.
+    function __Messenger_init(address _wETH, address _depositsManager, address _owner, address _service) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
+        __Messenger_init_unchained(_wETH, _depositsManager, _owner, _service);
+    }
 
+    /// @notice Internal function to initialize the state variables specific to Messenger.
+    /// @param _wETH Address of the WETH contract.
+    /// @param _depositsManager Address of the deposits manager.
+    /// @param _owner Address of the contract owner.
+    /// @param _service Address of the service account.
+    function __Messenger_init_unchained(
+        address _wETH,
+        address _depositsManager,
+        address _owner,
+        address _service
+    ) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         depositsManager = _depositsManager;
         setService(_service);

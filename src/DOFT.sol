@@ -48,9 +48,29 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
         address _delegate,
         address _minterAddress
     ) external initializer onlyProxy {
-        if (_minterAddress == address(0)) revert InvalidAddress();
+        if (_delegate == address(0) || _minterAddress == address(0)) revert InvalidAddress();
+
+        __DOFT_init(_name, _symbol, _delegate, _minterAddress);
+    }
+
+    /// @notice Internal function to initialize the contract.
+    /// @param _name Token name.
+    /// @param _symbol Token symbol.
+    /// @param _delegate Initial owner of the token.
+    /// @param _minterAddress Address granted permission to mint and burn tokens.
+    /// @dev Calls parent initializers in the correct order and then calls the contract-specific initializer.
+    function __DOFT_init(string memory _name, string memory _symbol, address _delegate, address _minterAddress) internal onlyInitializing {
         __OFT_init(_name, _symbol, _delegate);
         __Ownable_init();
+        __UUPSUpgradeable_init();
+        __DOFT_init_unchained(_delegate, _minterAddress);
+    }
+
+    /// @notice Internal function to initialize the state variables specific to DOFT.
+
+    /// @param _delegate Initial owner of the token.
+    /// @param _minterAddress Address granted permission to mint and burn tokens.
+    function __DOFT_init_unchained(address _delegate, address _minterAddress) internal onlyInitializing {
         _transferOwnership(_delegate);
         _minter = _minterAddress; // Sets the minter.
     }

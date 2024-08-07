@@ -79,10 +79,24 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @param _service Service address for access control
     function initialize(address _depositsManager, address payable _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
+        __LiquidityPool_init(_depositsManager, _owner, _service);
+    }
 
-        __Ownable_init();
+    ///@notice Internal function to initialize the contract.
+    ///@param _depositsManager Address authorized to manage deposits.
+    ///@param _owner Contract owner address.
+    ///@param _service Service address for access control.
+    function __LiquidityPool_init(address _depositsManager, address payable _owner, address _service) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
+        __LiquidityPool_init_unchained(_depositsManager, _owner, _service);
+    }
 
+    ///@notice Internal function to initialize the state variables specific to LiquidityPool.
+    ///@param _depositsManager Address authorized to manage deposits.
+    ///@param _owner Contract owner address.
+    ///@param _service Service address for access control.
+    function __LiquidityPool_init_unchained(address _depositsManager, address payable _owner, address _service) internal onlyInitializing {
         depositsManager = _depositsManager;
         setService(_service);
         transferOwnership(_owner);
