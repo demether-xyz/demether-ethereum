@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // *******************************************************
@@ -53,6 +54,13 @@ contract DepositsManagerL1 is
     /// @param _service Service address for contract control
     function initialize(address _owner, address _service) external initializer onlyProxy {
         if (_owner == address(0) || _service == address(0)) revert InvalidAddress();
+        __DepositsManagerL1_init(_owner, _service);
+    }
+
+    /// @notice Internal function to initialize the contract.
+    /// @param _owner Owner address with admin privileges.
+    /// @param _service Service address for contract control.
+    function __DepositsManagerL1_init(address _owner, address _service) internal onlyInitializing {
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();

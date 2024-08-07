@@ -74,12 +74,26 @@ contract DepositsManagerL2 is
     /// @param _nativeSupport Whether native token deposits are supported
     function initialize(address _wETH, address _owner, address _service, bool _nativeSupport) external initializer onlyProxy {
         if (_wETH == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
+        __DepositsManagerL2_init(_wETH, _owner, _service, _nativeSupport);
+    }
 
+    ///@notice Internal function to initialize the contract.
+    ///@param _wETH Address of the Wrapped ETH contract.
+    ///@param _owner Address of the contract owner.
+    ///@param _service Address of the service account.
+    ///@param _nativeSupport Whether native token deposits are supported.
+    function __DepositsManagerL2_init(address _wETH, address _owner, address _service, bool _nativeSupport) internal onlyInitializing {
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         __OwnableAccessControl_init(_owner, _service);
+        __DepositsManagerL2_init_unchained(_wETH, _nativeSupport);
+    }
 
+    /// @notice Internal function to initialize the state variables specific to DepositsManagerL2.
+    ///@param _wETH Address of the Wrapped ETH contract.
+    ///@param _nativeSupport Whether native token deposits are supported.
+    function __DepositsManagerL2_init_unchained(address _wETH, bool _nativeSupport) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
     }
