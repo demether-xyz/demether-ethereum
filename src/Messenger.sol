@@ -79,26 +79,17 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _owner Address of the contract owner.
     /// @param _service Address of the service account.
     function __Messenger_init(address _wETH, address _depositsManager, address _owner, address _service) internal onlyInitializing {
-        __Ownable_init();
+        __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
-        __Messenger_init_unchained(_wETH, _depositsManager, _owner, _service);
+        __Messenger_init_unchained(_wETH, _depositsManager);
     }
 
     /// @notice Internal function to initialize the state variables specific to Messenger.
     /// @param _wETH Address of the WETH contract.
     /// @param _depositsManager Address of the deposits manager.
-    /// @param _owner Address of the contract owner.
-    /// @param _service Address of the service account.
-    function __Messenger_init_unchained(
-        address _wETH,
-        address _depositsManager,
-        address _owner,
-        address _service
-    ) internal onlyInitializing {
+    function __Messenger_init_unchained(address _wETH, address _depositsManager) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         depositsManager = _depositsManager;
-        setService(_service);
-        transferOwnership(_owner);
 
         if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
     }
