@@ -112,7 +112,6 @@ contract DepositsManagerL2 is
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!nativeSupport) revert NativeTokenNotSupported();
         if (_fee > msg.value) revert InsufficientETHSent();
-        if (_fee > address(this).balance) revert InsufficientContractBalance();
         uint256 amountIn = msg.value - _fee;
         wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);

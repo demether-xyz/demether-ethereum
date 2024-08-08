@@ -40,8 +40,6 @@ interface IDepositsManager {
     error ApprovalFailed();
     /// @dev Thrown when ETH sent is less than the fee
     error InsufficientETHSent();
-    /// @dev Thrown when the balance of the contract is less than the fee
-    error InsufficientContractBalance();
 
     /// @dev Emitted on successful deposit
     /// @param user Address of depositor
