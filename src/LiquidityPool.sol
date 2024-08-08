@@ -136,9 +136,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         uint256 sfrxETHBalance = 0;
         if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
-        if (address(sfrxETH) != address(0)) {
-            sfrxETHBalance = sfrxETH.balanceOf(address(this));
-        }
+        sfrxETHBalance = sfrxETH.balanceOf(address(this));
 
         // EigenLayer restaked sfrxETH
         if (address(eigenLayerStrategy) != address(0)) {
