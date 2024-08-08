@@ -77,11 +77,11 @@ contract DepositsManagerL2 is
         __DepositsManagerL2_init(_wETH, _owner, _service, _nativeSupport);
     }
 
-    ///@notice Internal function to initialize the contract.
-    ///@param _wETH Address of the Wrapped ETH contract.
-    ///@param _owner Address of the contract owner.
-    ///@param _service Address of the service account.
-    ///@param _nativeSupport Whether native token deposits are supported.
+    /// @notice Internal function to initialize the contract.
+    /// @param _wETH Address of the Wrapped ETH contract.
+    /// @param _owner Address of the contract owner.
+    /// @param _service Address of the service account.
+    /// @param _nativeSupport Whether native token deposits are supported.
     function __DepositsManagerL2_init(address _wETH, address _owner, address _service, bool _nativeSupport) internal onlyInitializing {
         __Pausable_init();
         __ReentrancyGuard_init();

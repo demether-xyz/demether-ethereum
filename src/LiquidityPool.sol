@@ -82,19 +82,19 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         __LiquidityPool_init(_depositsManager, _owner, _service);
     }
 
-    ///@notice Internal function to initialize the contract.
-    ///@param _depositsManager Address authorized to manage deposits.
-    ///@param _owner Contract owner address.
-    ///@param _service Service address for access control.
+    /// @notice Internal function to initialize the contract.
+    /// @param _depositsManager Address authorized to manage deposits.
+    /// @param _owner Contract owner address.
+    /// @param _service Service address for access control.
     function __LiquidityPool_init(address _depositsManager, address payable _owner, address _service) internal onlyInitializing {
         __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
         __LiquidityPool_init_unchained(_depositsManager, _owner);
     }
 
-    ///@notice Internal function to initialize the state variables specific to LiquidityPool.
-    ///@param _depositsManager Address authorized to manage deposits.
-    ///@param _owner Contract owner address.
+    /// @notice Internal function to initialize the state variables specific to LiquidityPool.
+    /// @param _depositsManager Address authorized to manage deposits.
+    /// @param _owner Contract owner address.
     function __LiquidityPool_init_unchained(address _depositsManager, address _owner) internal onlyInitializing {
         depositsManager = _depositsManager;
         protocolFee = 1e17; // 10%
