@@ -95,7 +95,7 @@ contract DepositsManagerL2 is
         uint32 _chainId,
         uint256 _fee,
         address _referral
-    ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
+    ) external whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
         amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
     }
