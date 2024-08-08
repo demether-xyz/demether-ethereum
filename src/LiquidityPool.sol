@@ -234,9 +234,6 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
 
-    /// @notice Fallback function to receive ETH
-    receive() external payable {}
-
     /// @notice Sets the address of the Curve pool used for frxETH/ETH price
     /// @param _curvePool The address of the Curve pool contract
     function setCurvePool(address _curvePool) external onlyOwner {
