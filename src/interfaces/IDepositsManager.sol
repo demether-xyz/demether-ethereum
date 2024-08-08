@@ -38,6 +38,8 @@ interface IDepositsManager {
     error SendFailed(address sender, uint256 amount);
     /// @dev Thrown when token approval fails
     error ApprovalFailed();
+    /// @dev Thrown when fee is non zero while minting locally
+    error NonZeroFeeForLocalMinting(uint256 fee);
 
     /// @dev Emitted on successful deposit
     /// @param user Address of depositor
