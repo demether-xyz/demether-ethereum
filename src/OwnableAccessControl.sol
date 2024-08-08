@@ -45,7 +45,7 @@ abstract contract OwnableAccessControl is OwnableUpgradeable {
     /// @param admin The address to be set as the owner
     /// @param initialService The initial service address
     // solhint-disable-next-line
-    function __OwnableAccessControl_init(address admin, address initialService) public onlyInitializing {
+    function __OwnableAccessControl_init(address admin, address initialService) internal onlyInitializing {
         __Ownable_init();
         setService(initialService);
         transferOwnership(admin);
