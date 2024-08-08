@@ -111,6 +111,8 @@ contract DepositsManagerL2 is
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!nativeSupport) revert NativeTokenNotSupported();
+        if (_chainId == 0 && _fee != 0) revert NonZeroFeeForLocalMinting(_fee);
+
         uint256 amountIn = msg.value - _fee;
         wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);

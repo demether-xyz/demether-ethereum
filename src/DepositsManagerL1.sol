@@ -71,6 +71,7 @@ contract DepositsManagerL1 is
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (msg.value == 0 || msg.value <= _fee) revert InvalidAmount();
         if (address(pool) == address(0)) revert InstanceNotSet();
+        if (_chainId == 0 && _fee != 0) revert NonZeroFeeForLocalMinting(_fee);
 
         uint256 _amountIn = msg.value - _fee;
 
