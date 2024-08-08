@@ -18,7 +18,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, 0, 0, address(0));
+        depositsManagerL2.deposit(amount, 0, address(0));
         assertEq(wETHL2.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
     }
@@ -33,7 +33,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit{ value: fee }(amount, L1_EID, fee, address(0));
+        depositsManagerL2.deposit{ value: fee }(amount, L1_EID, address(0));
         assertEq(l2token.balanceOf(address(this)), 0);
         assertEq(l2token.balanceOf(address(depositsManagerL1)), 0);
         verifyPackets(L1_EID, addressToBytes32(address(l1token)));
@@ -45,7 +45,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, 0, 0, address(0));
+        depositsManagerL2.deposit(amount, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether);
 
@@ -100,7 +100,7 @@ contract NativeMintingL2 is TestSetup {
         uint256 amount = 100 ether;
         wETHL2.deposit{ value: amount }();
         wETHL2.approve(address(depositsManagerL2), amount);
-        depositsManagerL2.deposit(amount, 0, 0, address(0));
+        depositsManagerL2.deposit(amount, 0, address(0));
         // 0.1% fee captured to cover slippage
         assertEq(l2token.balanceOf(address(this)), 99.9 ether); // mints more than should
 
@@ -125,14 +125,14 @@ contract DepositTestL2 is TestSetup {
         depositsManagerL2.pause();
 
         vm.expectRevert(bytes("Pausable: paused"));
-        depositsManagerL2.deposit(0, 1, 1, address(0));
+        depositsManagerL2.deposit(0, 1, address(0));
         vm.stopPrank();
     }
 
     function test_RevertWhenL1NotApprovedForUsingWETH() external {
         vm.startPrank(role.owner);
         vm.expectRevert(IDepositsManager.InvalidAmount.selector);
-        depositsManagerL2.deposit(0, 1, 1, address(0));
+        depositsManagerL2.deposit(0, 1, address(0));
         vm.stopPrank();
     }
 }

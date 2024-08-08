@@ -94,17 +94,15 @@ contract DepositsManagerL2 is
     /// @notice Deposits tokens and optionally bridges to another chain
     /// @param _amountIn Amount of tokens to deposit
     /// @param _chainId Target chain ID (0 for local minting)
-    /// @param _fee LayerZero fee for cross-chain transfers
     /// @param _referral Referral address
     /// @return amountOut Amount of tokens minted
     function deposit(
         uint256 _amountIn,
         uint32 _chainId,
-        uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
-        amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
+        amountOut = _deposit(_amountIn, _chainId, msg.value, _referral);
     }
 
     /// @notice Deposits native ETH and optionally bridges to another chain
