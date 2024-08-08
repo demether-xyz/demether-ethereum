@@ -38,6 +38,8 @@ interface IDepositsManager {
     error SendFailed(address sender, uint256 amount);
     /// @dev Thrown when token approval fails
     error ApprovalFailed();
+    /// @dev Thrown when ETH sent is less than the fee
+    error InsufficientETHSent();
 
     /// @dev Emitted on successful deposit
     /// @param user Address of depositor
