@@ -37,6 +37,13 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
         _;
     }
 
+    /// @notice Assigns a new minter to ensure security, if previous minter get compromised
+    /// @param _newMinter New minter address
+    function setMinter(address _newMinter) external onlyOwner {
+        if (_newMinter == address(0)) revert InvalidAddress();
+        _minter = _newMinter;
+    }
+
     /// @notice Initializes the contract with token name, symbol, initial delegate, and minter.
     /// @param _name Token name.
     /// @param _symbol Token symbol.
