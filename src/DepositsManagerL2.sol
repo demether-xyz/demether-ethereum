@@ -125,6 +125,7 @@ contract DepositsManagerL2 is
     /// @return amountOut Amount of tokens minted
     function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
         if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
+        if (address(messenger) == address(0)) revert InvalidAddress();
 
         // Mints Locally or mints and sends to a supported chain
         if (_chainId == 0) {
@@ -185,6 +186,7 @@ contract DepositsManagerL2 is
     /// @param _amount Amount of tokens to sync
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
+        if (address(messenger) == address(0)) revert InvalidAddress();
         messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
@@ -192,6 +194,7 @@ contract DepositsManagerL2 is
     /// @param _chainId Source chain ID
     /// @param _message Received message
     function onMessageReceived(uint32 _chainId, bytes calldata _message) external nonReentrant {
+        if (address(messenger) == address(0)) revert InvalidAddress();
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
         if (code == MESSAGE_SYNC_RATE) {
