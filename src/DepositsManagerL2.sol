@@ -132,6 +132,7 @@ contract DepositsManagerL2 is
 
         // Mints Locally or mints and sends to a supported chain
         if (_chainId == 0) {
+            if (_fee > 0) revert InvalidFee();
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
