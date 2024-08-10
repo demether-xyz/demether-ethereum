@@ -94,6 +94,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Adds liquidity to the pool increasing shares and receiving assets
     /// @dev Can be used to increase assets without increasing the rate given DOFT is not minted
     function addLiquidity() public payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
         uint256 amount = msg.value;
 
         if (amount <= 0) revert InvalidAmount();
@@ -107,6 +108,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
         if (msg.value > 0) addLiquidity();
 
         uint256 balance = address(this).balance;

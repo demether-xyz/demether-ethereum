@@ -117,6 +117,15 @@ contract DepositsManagerL1 is
         pool.addLiquidity{ value: address(this).balance }();
     }
 
+    /// @notice Add liquidity without minting tokens
+    /// @dev Only to be used for balancing, not by end user deposits
+    function addLiquidity() external payable whenNotPaused nonReentrant {
+        if (address(pool) == address(0)) revert InstanceNotSet();
+        // slither-disable-next-line arbitrary-send-eth
+        pool.addLiquidity{ value: msg.value }();
+    }
+
+    /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external whenNotPaused nonReentrant {
         if (address(pool) == address(0)) revert InstanceNotSet();
         // slither-disable-next-line arbitrary-send-eth

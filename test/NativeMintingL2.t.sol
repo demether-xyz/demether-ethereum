@@ -78,7 +78,7 @@ contract NativeMintingL2 is TestSetup {
         assertEq(missingETH, 0.1 ether);
 
         // add surplus to cover the gap
-        liquidityPool.addLiquidity{ value: 1 ether }();
+        depositsManagerL1.addLiquidity{ value: 1 ether }();
 
         oftSupply = l1token.totalSupply() + l2token.totalSupply();
         assertEq(oftSupply, 199.9 ether);
