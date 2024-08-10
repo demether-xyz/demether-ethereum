@@ -36,6 +36,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
+    uint256 internal constant PROTOCOL_MAX_FEE = 2e17; // 20%
 
     /// @notice Contract authorized to manage deposits
     address private depositsManager;
@@ -260,7 +261,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Sets the protocol fee
     /// @param _fee New fee value (in PRECISION)
     function setProtocolFee(uint256 _fee) external onlyOwner {
-        if (_fee > PRECISION) revert InvalidFee();
+        if (_fee > PROTOCOL_MAX_FEE) revert InvalidFee();
         protocolFee = _fee;
         emit ProtocolFeeUpdated(_fee, msg.sender);
     }

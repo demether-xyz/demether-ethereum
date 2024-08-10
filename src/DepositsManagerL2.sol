@@ -42,6 +42,8 @@ contract DepositsManagerL2 is
     using OptionsBuilder for bytes;
 
     uint256 internal constant PRECISION = 1e18;
+    uint256 internal constant FEE_DEPOSIT_MAX = 2e16; // 2%
+    uint256 internal constant FEE_DEPOSIT_MIN = 1e14; // 0.01%
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
@@ -222,7 +224,7 @@ contract DepositsManagerL2 is
     /// @notice Sets the deposit fee
     /// @param _fee New fee value
     function setDepositFee(uint256 _fee) external onlyService {
-        if (_fee > PRECISION) revert InvalidFee();
+        if (_fee < FEE_DEPOSIT_MIN || _fee > FEE_DEPOSIT_MAX) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
     }
