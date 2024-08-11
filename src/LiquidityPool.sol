@@ -81,13 +81,10 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     function initialize(address _depositsManager, address payable _owner, address _service) external initializer onlyProxy {
         if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
 
-        __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
+        __OwnableAccessControl_init(_owner, _service);
 
         depositsManager = _depositsManager;
-        setService(_service);
-        transferOwnership(_owner);
-
         protocolFee = 1e17; // 10%
         protocolTreasury = _owner;
     }
