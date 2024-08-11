@@ -73,6 +73,7 @@ contract DepositsManagerL1 is
     /// @param _fee Fee associated with the transfer
     /// @param _referral Referral address for potential rewards
     /// @return amountOut Amount of tokens minted or transferred
+    // slither-disable-next-line cyclomatic-complexity
     function depositETH(
         uint32 _chainId,
         uint256 _fee,

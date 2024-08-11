@@ -146,6 +146,7 @@ contract DepositsManagerL2 is
     /// @param _fee LayerZero fee
     /// @param _referral Referral address
     /// @return amountOut Amount of tokens minted
+    // slither-disable-next-line cyclomatic-complexity
     function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
         if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
         if (address(token) == address(0)) revert InvalidAddress();
