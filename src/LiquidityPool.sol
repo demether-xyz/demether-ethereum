@@ -137,10 +137,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @return Total assets in ETH
     function totalAssets() public view returns (uint256) {
         uint256 sfrxETHBalance = 0;
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
-        if (address(sfrxETH) != address(0)) {
-            sfrxETHBalance = sfrxETH.balanceOf(address(this));
-        }
+        sfrxETHBalance = sfrxETH.balanceOf(address(this));
 
         // EigenLayer restaked sfrxETH
         if (address(eigenLayerStrategy) != address(0)) {
@@ -221,6 +220,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @dev Restakes sfrxETH in EigenLayer
     function _eigenLayerRestake() internal {
         if (address(eigenLayerStrategyManager) == address(0) || address(fraxMinter) == address(0)) return;
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
         uint256 sfrxETHBalance = sfrxETH.balanceOf(address(this));
         if (!sfrxETH.approve(address(eigenLayerStrategyManager), sfrxETHBalance)) revert ApprovalFailed();
