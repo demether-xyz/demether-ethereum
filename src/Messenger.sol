@@ -78,6 +78,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _depositsManager Address of the deposits manager.
     /// @param _owner Address of the contract owner.
     /// @param _service Address of the service account.
+    // solhint-disable-next-line
     function __Messenger_init(address _wETH, address _depositsManager, address _owner, address _service) internal onlyInitializing {
         __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
@@ -87,6 +88,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @notice Internal function to initialize the state variables specific to Messenger.
     /// @param _wETH Address of the WETH contract.
     /// @param _depositsManager Address of the deposits manager.
+    // solhint-disable-next-line
     function __Messenger_init_unchained(address _wETH, address _depositsManager) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         depositsManager = _depositsManager;

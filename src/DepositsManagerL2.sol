@@ -90,6 +90,7 @@ contract DepositsManagerL2 is
     /// @param _owner Address of the contract owner.
     /// @param _service Address of the service account.
     /// @param _nativeSupport Whether native token deposits are supported.
+    // solhint-disable-next-line
     function __DepositsManagerL2_init(address _wETH, address _owner, address _service, bool _nativeSupport) internal onlyInitializing {
         __OwnableAccessControl_init(_owner, _service);
         __Pausable_init();
@@ -101,6 +102,7 @@ contract DepositsManagerL2 is
     /// @notice Internal function to initialize the state variables specific to DepositsManagerL2.
     ///@param _wETH Address of the Wrapped ETH contract.
     ///@param _nativeSupport Whether native token deposits are supported.
+    // solhint-disable-next-line
     function __DepositsManagerL2_init_unchained(address _wETH, bool _nativeSupport) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;

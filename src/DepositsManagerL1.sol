@@ -60,6 +60,7 @@ contract DepositsManagerL1 is
     /// @notice Internal function to initialize the contract.
     /// @param _owner Owner address with admin privileges.
     /// @param _service Service address for contract control.
+    // solhint-disable-next-line
     function __DepositsManagerL1_init(address _owner, address _service) internal onlyInitializing {
         __OwnableAccessControl_init(_owner, _service);
         __Pausable_init();
