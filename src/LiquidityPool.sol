@@ -27,6 +27,8 @@ import { IsfrxETH } from "@frxETH/IsfrxETH.sol";
 import { IStrategyManager, IStrategy, IDelegationManager } from "@eigenlayer/contracts/interfaces/IStrategyManager.sol";
 import { ISignatureUtils } from "@eigenlayer/contracts/interfaces/ISignatureUtils.sol";
 
+import { IDefaultCollateral } from "./interfaces/IDefaultCollateral.sol";
+
 /// @title LiquidityPool
 /// @dev Manages ETH liquidity, staking, and yield strategies
 contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, ILiquidityPool {
@@ -37,6 +39,11 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint256 internal constant PROTOCOL_MAX_FEE = 2e17; // 20%
+    uint8 internal constant STRATEGY_EIGENLAYER = 0;
+    uint8 internal constant STRATEGY_SYMBIOTIC = 1;
+
+    /// @notice Denotes the yield strategy used for next restake
+    uint8 public strategy;
 
     /// @notice Contract authorized to manage deposits
     address private depositsManager;
@@ -73,6 +80,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /// @notice Curve pool for frxETH to ETH conversion
     ICurvePool public frxETHCurvePool;
+
+    /// @notice sfrxETH collateral on Symbiotic
+    IDefaultCollateral public symbioticSfrxETH;
 
     /// @dev Initializes the contract
     /// @param _depositsManager Address authorized to manage deposits
@@ -141,7 +151,11 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
             _mintSfrxETH();
 
             // send to EigenLayer strategies
-            _eigenLayerRestake();
+            if (strategy == STRATEGY_EIGENLAYER) {
+                _eigenLayerRestake();
+            } else if (strategy == STRATEGY_SYMBIOTIC) {
+                _symbioticRestake();
+            }
         }
     }
 
@@ -156,6 +170,11 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         // EigenLayer restaked sfrxETH
         if (address(eigenLayerStrategy) != address(0)) {
             sfrxETHBalance += eigenLayerStrategy.userUnderlyingView(address(this));
+        }
+
+        // Symbiotic restaked sfrxETH
+        if (address(symbioticSfrxETH) != address(0)) {
+            sfrxETHBalance += symbioticSfrxETH.balanceOf(address(this));
         }
 
         uint256 frxETHBalance = sfrxETH.convertToAssets(sfrxETHBalance);
@@ -241,12 +260,30 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (shares <= 0) revert StrategyFailed();
     }
 
+    function _symbioticRestake() internal {
+        if (address(symbioticSfrxETH) == address(0) || address(fraxMinter) == address(0)) return;
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
+
+        uint256 sfrxETHBalance = sfrxETH.balanceOf(address(this));
+        if (!sfrxETH.approve(address(symbioticSfrxETH), sfrxETHBalance)) revert ApprovalFailed();
+
+        uint256 shares = symbioticSfrxETH.deposit(address(this), sfrxETHBalance);
+        if (shares <= 0) revert StrategyFailed();
+    }
+
     /// @notice Delegates to an operator in EigenLayer
     /// @param _operator Address of the operator to delegate to
     function delegateEigenLayer(address _operator) external onlyService {
         if (address(eigenLayerDelegationManager) == address(0)) revert InvalidEigenLayerStrategy();
         if (_operator == address(0)) revert InvalidAddress();
         eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
+    }
+
+    /// @notice Sets the strategy used for restaking
+    function setStrategy(uint8 _strategy) external onlyService {
+        if (_strategy != STRATEGY_EIGENLAYER && _strategy != STRATEGY_SYMBIOTIC) revert InvalidStrategy();
+        strategy = _strategy;
+        emit StrategySet(_strategy);
     }
 
     /// @notice Sets the address of the Curve pool used for frxETH/ETH price
@@ -262,12 +299,19 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @param _delegationManager Address of EigenLayer delegation manager
     function setEigenLayer(address _strategyManager, address _strategy, address _delegationManager) external onlyOwner {
         if (_strategyManager == address(0) || _strategy == address(0) || _delegationManager == address(0)) revert InvalidAddress();
-        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
         if (address(sfrxETH) != address(IStrategy(_strategy).underlyingToken())) revert InvalidEigenLayerStrategy();
 
         eigenLayerStrategyManager = IStrategyManager(_strategyManager);
         eigenLayerStrategy = IStrategy(_strategy);
         eigenLayerDelegationManager = IDelegationManager(_delegationManager);
+    }
+
+    /// @notice Sets the collateral address for sfrxETH on Symbiotic
+    /// @param _collateral Address of the collateral contract
+    function setSymbiotic(address _collateral) external onlyOwner {
+        if (_collateral == address(0)) revert InvalidAddress();
+
+        symbioticSfrxETH = IDefaultCollateral(_collateral);
     }
 
     /// @notice Sets the protocol fee
