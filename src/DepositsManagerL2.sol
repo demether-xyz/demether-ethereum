@@ -42,6 +42,8 @@ contract DepositsManagerL2 is
     using OptionsBuilder for bytes;
 
     uint256 internal constant PRECISION = 1e18;
+    uint256 internal constant FEE_DEPOSIT_MAX = 2e16; // 2%
+    uint256 internal constant FEE_DEPOSIT_MIN = 1e14; // 0.01%
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
     uint32 internal constant ETHEREUM_CHAIN_ID = 1;
     uint256 private constant MESSAGE_SYNC_RATE = 1;
@@ -66,6 +68,12 @@ contract DepositsManagerL2 is
 
     /// @notice Block number of the last rate sync
     uint256 public rateSyncBlock;
+
+    /// @notice Block timestamp of the last rate sync
+    uint256 public rateSyncTimestamp;
+
+    /// @notice Maximum allowed time (in seconds) for rate staleness
+    uint256 public maxRateStaleness;
 
     /// @notice Initializes the contract with essential parameters
     /// @param _wETH Address of the Wrapped ETH contract
@@ -96,22 +104,21 @@ contract DepositsManagerL2 is
     function __DepositsManagerL2_init_unchained(address _wETH, bool _nativeSupport) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         nativeSupport = _nativeSupport;
+        maxRateStaleness = 3 days;
     }
 
     /// @notice Deposits tokens and optionally bridges to another chain
     /// @param _amountIn Amount of tokens to deposit
     /// @param _chainId Target chain ID (0 for local minting)
-    /// @param _fee LayerZero fee for cross-chain transfers
     /// @param _referral Referral address
     /// @return amountOut Amount of tokens minted
     function deposit(
         uint256 _amountIn,
         uint32 _chainId,
-        uint256 _fee,
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!wETH.transferFrom(msg.sender, address(this), _amountIn)) revert DepositFailed(msg.sender, _amountIn);
-        amountOut = _deposit(_amountIn, _chainId, _fee, _referral);
+        amountOut = _deposit(_amountIn, _chainId, msg.value, _referral);
     }
 
     /// @notice Deposits native ETH and optionally bridges to another chain
@@ -125,6 +132,7 @@ contract DepositsManagerL2 is
         address _referral
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (!nativeSupport) revert NativeTokenNotSupported();
+        if (_fee > msg.value) revert InsufficientETHSent();
         uint256 amountIn = msg.value - _fee;
         wETH.deposit{ value: address(this).balance - _fee }();
         amountOut = _deposit(amountIn, _chainId, _fee, _referral);
@@ -138,9 +146,12 @@ contract DepositsManagerL2 is
     /// @return amountOut Amount of tokens minted
     function _deposit(uint256 _amountIn, uint32 _chainId, uint256 _fee, address _referral) internal returns (uint256 amountOut) {
         if (_amountIn == 0 || msg.value < _fee) revert InvalidAmount();
+        if (address(token) == address(0)) revert InvalidAddress();
+        if (address(messenger) == address(0)) revert InvalidAddress();
 
         // Mints Locally or mints and sends to a supported chain
         if (_chainId == 0) {
+            if (_fee > 0) revert InvalidFee();
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
@@ -182,6 +193,13 @@ contract DepositsManagerL2 is
     /// @return amountOut Converted output amount
     function getConversionAmount(uint256 _amountIn) public view returns (uint256 amountOut) {
         if (rateSyncBlock == 0) revert RateInvalid(rate);
+
+        // Check if the rate is stale
+        // slither-disable-next-line timestamp
+        if (block.timestamp - rateSyncTimestamp > maxRateStaleness) {
+            revert RateStale();
+        }
+
         uint256 feeAmount = (_amountIn * depositFee + PRECISION_SUB_ONE) / PRECISION;
         uint256 amountInAfterFee = _amountIn - feeAmount;
         amountOut = (amountInAfterFee * PRECISION) / rate;
@@ -198,6 +216,7 @@ contract DepositsManagerL2 is
     /// @param _amount Amount of tokens to sync
     function syncTokens(uint256 _amount) external payable whenNotPaused nonReentrant {
         if (_amount == 0 || _amount > wETH.balanceOf(address(this))) revert InvalidSyncAmount();
+        if (address(messenger) == address(0)) revert InvalidAddress();
         messenger.syncTokens{ value: msg.value }(ETHEREUM_CHAIN_ID, _amount, msg.sender);
     }
 
@@ -208,11 +227,12 @@ contract DepositsManagerL2 is
         if (msg.sender != address(messenger) || _chainId != ETHEREUM_CHAIN_ID) revert Unauthorized();
         uint256 code = abi.decode(_message, (uint256));
         if (code == MESSAGE_SYNC_RATE) {
-            (, uint256 _block, uint256 _rate) = abi.decode(_message, (uint256, uint256, uint256));
+            (, uint256 _block, uint256 _timestamp, uint256 _rate) = abi.decode(_message, (uint256, uint256, uint256, uint256));
             if (_block > rateSyncBlock) {
                 rate = _rate;
                 rateSyncBlock = _block;
-                emit RateUpdated(_rate, _block);
+                rateSyncTimestamp = _timestamp;
+                emit RateUpdated(_rate, _block, _timestamp);
             }
         } else {
             revert InvalidMessageCode();
@@ -222,9 +242,16 @@ contract DepositsManagerL2 is
     /// @notice Sets the deposit fee
     /// @param _fee New fee value
     function setDepositFee(uint256 _fee) external onlyService {
-        if (_fee > PRECISION) revert InvalidFee();
+        if (_fee < FEE_DEPOSIT_MIN || _fee > FEE_DEPOSIT_MAX) revert InvalidFee();
         depositFee = _fee;
         emit DepositFeeSet(_fee);
+    }
+
+    /// @notice Sets the maximum allowed time for rate staleness
+    /// @param _maxStaleness Maximum staleness time in seconds
+    function setMaxRateStaleness(uint256 _maxStaleness) external onlyOwner {
+        maxRateStaleness = _maxStaleness;
+        emit MaxRateStalenessUpdated(_maxStaleness);
     }
 
     /// @notice Sets the token contract address

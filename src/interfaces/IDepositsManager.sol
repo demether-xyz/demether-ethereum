@@ -38,6 +38,10 @@ interface IDepositsManager {
     error SendFailed(address sender, uint256 amount);
     /// @dev Thrown when token approval fails
     error ApprovalFailed();
+    /// @dev Thrown when the rate is stale (not updated within the allowed time frame)
+    error RateStale();
+    /// @dev Thrown when ETH sent is less than the fee
+    error InsufficientETHSent();
 
     /// @dev Emitted on successful deposit
     /// @param user Address of depositor
@@ -53,7 +57,12 @@ interface IDepositsManager {
     /// @dev Emitted when deposit rate is updated
     /// @param newRate New conversion rate
     /// @param blockNumber Block number of update
-    event RateUpdated(uint256 newRate, uint256 blockNumber);
+    /// @param timeStamp Timestamp of update
+    event RateUpdated(uint256 newRate, uint256 blockNumber, uint256 timeStamp);
+
+    /// @dev Emitted when the maximum rate staleness is updated
+    /// @param newMaxStaleness New maximum staleness value
+    event MaxRateStalenessUpdated(uint256 newMaxStaleness);
 
     /// @dev Handles cross-chain message reception
     /// @param chainId Originating chain ID

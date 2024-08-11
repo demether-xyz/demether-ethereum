@@ -22,7 +22,6 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     error ImplementationIsNotContract(address newImplementation);
     error UnauthorizedMinter(address caller);
-    error InvalidAddress();
 
     address private _minter;
 
@@ -48,7 +47,7 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
         address _delegate,
         address _minterAddress
     ) external initializer onlyProxy {
-        if (_delegate == address(0) || _minterAddress == address(0)) revert InvalidAddress();
+        if (_delegate == address(0)) revert InvalidAddress();
 
         __DOFT_init(_name, _symbol, _delegate, _minterAddress);
     }
@@ -91,6 +90,12 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     function burn(address _from, uint256 _amount) external onlyMinter returns (bool) {
         _burn(_from, _amount);
         return true;
+    }
+
+    /// @notice Assigns a new minter address.
+    /// @param _newMinter New minter address
+    function setMinter(address _newMinter) external onlyOwner {
+        _minter = _newMinter;
     }
 
     /// @dev Authorizes the upgrade of the contract.

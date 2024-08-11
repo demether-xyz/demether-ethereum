@@ -79,11 +79,13 @@ contract DepositsManagerL1 is
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (msg.value == 0 || msg.value <= _fee) revert InvalidAmount();
         if (address(pool) == address(0)) revert InstanceNotSet();
+        if (address(token) == address(0)) revert InvalidAddress();
 
         uint256 _amountIn = msg.value - _fee;
 
         // Mint locally or send to a supported chain
         if (_chainId == 0) {
+            if (_fee > 0) revert InvalidFee();
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
@@ -125,6 +127,15 @@ contract DepositsManagerL1 is
         pool.addLiquidity{ value: address(this).balance }();
     }
 
+    /// @notice Add liquidity without minting tokens
+    /// @dev Only to be used for balancing, not by end user deposits
+    function addLiquidity() external payable whenNotPaused nonReentrant {
+        if (address(pool) == address(0)) revert InstanceNotSet();
+        // slither-disable-next-line arbitrary-send-eth
+        pool.addLiquidity{ value: msg.value }();
+    }
+
+    /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external whenNotPaused nonReentrant {
         if (address(pool) == address(0)) revert InstanceNotSet();
         // slither-disable-next-line arbitrary-send-eth
@@ -154,7 +165,7 @@ contract DepositsManagerL1 is
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         if (address(messenger) == address(0)) revert InstanceNotSet();
 
-        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
+        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, block.timestamp, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
             // slither-disable-next-line arbitrary-send-eth,calls-loop

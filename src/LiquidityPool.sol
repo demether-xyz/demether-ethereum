@@ -36,6 +36,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     uint256 internal constant PRECISION = 1e18;
     uint256 internal constant PRECISION_SUB_ONE = PRECISION - 1;
+    uint256 internal constant PROTOCOL_MAX_FEE = 2e17; // 20%
 
     /// @notice Contract authorized to manage deposits
     address private depositsManager;
@@ -104,6 +105,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Adds liquidity to the pool increasing shares and receiving assets
     /// @dev Can be used to increase assets without increasing the rate given DOFT is not minted
     function addLiquidity() public payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
         uint256 amount = msg.value;
 
         if (amount <= 0) revert InvalidAmount();
@@ -117,6 +119,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
 
     /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external payable {
+        if (msg.sender != depositsManager) revert Unauthorized();
         if (msg.value > 0) addLiquidity();
 
         uint256 balance = address(this).balance;
@@ -144,10 +147,9 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @return Total assets in ETH
     function totalAssets() public view returns (uint256) {
         uint256 sfrxETHBalance = 0;
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
-        if (address(sfrxETH) != address(0)) {
-            sfrxETHBalance = sfrxETH.balanceOf(address(this));
-        }
+        sfrxETHBalance = sfrxETH.balanceOf(address(this));
 
         // EigenLayer restaked sfrxETH
         if (address(eigenLayerStrategy) != address(0)) {
@@ -228,6 +230,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @dev Restakes sfrxETH in EigenLayer
     function _eigenLayerRestake() internal {
         if (address(eigenLayerStrategyManager) == address(0) || address(fraxMinter) == address(0)) return;
+        if (address(sfrxETH) == address(0)) revert LSTMintingNotSet();
 
         uint256 sfrxETHBalance = sfrxETH.balanceOf(address(this));
         if (!sfrxETH.approve(address(eigenLayerStrategyManager), sfrxETHBalance)) revert ApprovalFailed();
@@ -243,9 +246,6 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (_operator == address(0)) revert InvalidAddress();
         eigenLayerDelegationManager.delegateTo(_operator, ISignatureUtils.SignatureWithExpiry("", 0), "");
     }
-
-    /// @notice Fallback function to receive ETH
-    receive() external payable {}
 
     /// @notice Sets the address of the Curve pool used for frxETH/ETH price
     /// @param _curvePool The address of the Curve pool contract
@@ -271,7 +271,7 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
     /// @notice Sets the protocol fee
     /// @param _fee New fee value (in PRECISION)
     function setProtocolFee(uint256 _fee) external onlyOwner {
-        if (_fee > PRECISION) revert InvalidFee();
+        if (_fee > PROTOCOL_MAX_FEE) revert InvalidFee();
         protocolFee = _fee;
         emit ProtocolFeeUpdated(_fee, msg.sender);
     }
