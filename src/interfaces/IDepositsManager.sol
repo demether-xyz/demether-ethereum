@@ -40,6 +40,8 @@ interface IDepositsManager {
     error ApprovalFailed();
     /// @dev Thrown when the rate is stale (not updated within the allowed time frame)
     error RateStale();
+    /// @dev Thrown when ETH sent is less than the fee
+    error InsufficientETHSent();
 
     /// @dev Emitted on successful deposit
     /// @param user Address of depositor
