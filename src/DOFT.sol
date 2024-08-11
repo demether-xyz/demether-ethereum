@@ -22,6 +22,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     error ImplementationIsNotContract(address newImplementation);
     error UnauthorizedMinter(address caller);
+    error InvalidAddress();
 
     address private _minter;
 

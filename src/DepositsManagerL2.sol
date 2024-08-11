@@ -91,10 +91,10 @@ contract DepositsManagerL2 is
     /// @param _service Address of the service account.
     /// @param _nativeSupport Whether native token deposits are supported.
     function __DepositsManagerL2_init(address _wETH, address _owner, address _service, bool _nativeSupport) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        __OwnableAccessControl_init(_owner, _service);
         __DepositsManagerL2_init_unchained(_wETH, _nativeSupport);
     }
 

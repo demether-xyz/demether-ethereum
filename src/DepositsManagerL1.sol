@@ -61,10 +61,10 @@ contract DepositsManagerL1 is
     /// @param _owner Owner address with admin privileges.
     /// @param _service Service address for contract control.
     function __DepositsManagerL1_init(address _owner, address _service) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        __OwnableAccessControl_init(_owner, _service);
     }
 
     /// @notice Handles ETH deposits
