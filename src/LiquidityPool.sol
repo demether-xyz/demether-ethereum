@@ -120,9 +120,11 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (msg.sender != depositsManager) revert Unauthorized();
         uint256 amount = msg.value;
 
-        if (amount <= 0) revert InvalidAmount();
+        // slither-disable-next-line incorrect-equality
+        if (amount == 0) revert InvalidAmount();
         (uint256 shares, uint256 totalPooledAssets) = _convertToShares(amount);
-        if (shares <= 0) revert InvalidAmount();
+        // slither-disable-next-line incorrect-equality
+        if (shares == 0) revert InvalidAmount();
 
         totalShares += shares;
 
@@ -211,7 +213,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
             protocolAccruedFees += rewardsFee;
         }
         lastTotalPooledEther = totalPooledEtherWithDeposit;
-        shares = supply <= 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
+        // slither-disable-next-line incorrect-equality
+        shares = supply == 0 ? _deposit : _deposit.mulDivDown(supply, totalPooledEther);
     }
 
     /// @notice Get current exchange rate of shares to ETH
@@ -228,15 +231,17 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         }
 
         uint256 amount = 1 ether;
-        return supply <= 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
+        // slither-disable-next-line incorrect-equality
+        return supply == 0 ? amount : amount.mulDivDown(totalPooledEther, supply);
     }
 
     /// @dev Mints sfrxETH with available ETH balance
     function _mintSfrxETH() internal {
         uint256 balance = address(this).balance;
-        if (address(fraxMinter) == address(0) || balance <= 0) return;
-        // slither-disable-next-line arbitrary-send-eth
-        if (fraxMinter.submitAndDeposit{ value: balance }(address(this)) <= 0) revert MintFailed();
+        // slither-disable-next-line incorrect-equality
+        if (address(fraxMinter) == address(0) || balance == 0) return;
+        // slither-disable-next-line arbitrary-send-eth,incorrect-equality
+        if (fraxMinter.submitAndDeposit{ value: balance }(address(this)) == 0) revert MintFailed();
     }
 
     /// @notice Sets the frxETH minter address
@@ -257,7 +262,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (!sfrxETH.approve(address(eigenLayerStrategyManager), sfrxETHBalance)) revert ApprovalFailed();
 
         uint256 shares = eigenLayerStrategyManager.depositIntoStrategy(eigenLayerStrategy, IERC20(address(sfrxETH)), sfrxETHBalance);
-        if (shares <= 0) revert StrategyFailed();
+        // slither-disable-next-line incorrect-equality
+        if (shares == 0) revert StrategyFailed();
     }
 
     function _symbioticRestake() internal {
@@ -268,7 +274,8 @@ contract LiquidityPool is Initializable, OwnableAccessControl, UUPSUpgradeable, 
         if (!sfrxETH.approve(address(symbioticSfrxETH), sfrxETHBalance)) revert ApprovalFailed();
 
         uint256 shares = symbioticSfrxETH.deposit(address(this), sfrxETHBalance);
-        if (shares <= 0) revert StrategyFailed();
+        // slither-disable-next-line incorrect-equality
+        if (shares == 0) revert StrategyFailed();
     }
 
     /// @notice Delegates to an operator in EigenLayer
