@@ -27,17 +27,17 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistrib
         rewardToken = _reward;
         totalRewardMerkleRoot = _totalRewardMerkleRoot;
         claimStartTime = block.timestamp;
-        claimEndTime = block.timestamp + 90 days;
+        claimEndTime = claimStartTime + 90 days;
     }
 
     /* ============ External Getters ============ */
 
-    function getClaimed(address account) public view returns (uint256) {
+    function getClaimedReward(address account) public view returns (uint256) {
         if (account == address(0)) revert InvalidAddress();
         return claimedAmount[account];
     }
 
-    function getClaimable(address account, uint256 amount, bytes32[] calldata merkleProof) public view returns (uint256) {
+    function getClaimableReward(address account, uint256 amount, bytes32[] calldata merkleProof) public view returns (uint256) {
         if (account == address(0)) revert InvalidAddress();
         if (amount == 0) revert InvalidAmount();
         if (merkleProof.length == 0) revert InvalidMerkleProof();
@@ -49,7 +49,7 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistrib
             return 0;
         }
 
-        return _getClaimable(account, amount);
+        return _getClaimableReward(account, amount);
     }
 
     /* ============ External Functions ============ */
@@ -62,7 +62,7 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistrib
         return MerkleProof.verify(merkleProof, totalRewardMerkleRoot, node);
     }
 
-    function claim(uint256 amount, bytes32[] calldata merkleProof) external whenNotPaused nonReentrant {
+    function claimReward(uint256 amount, bytes32[] calldata merkleProof) external whenNotPaused nonReentrant {
         if (amount == 0) revert InvalidAmount();
         if (merkleProof.length == 0) revert InvalidMerkleProof();
         if (block.timestamp >= claimEndTime) {
@@ -74,7 +74,7 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistrib
             revert InvalidProof();
         }
 
-        uint256 claimable = _getClaimable(msg.sender, amount);
+        uint256 claimable = _getClaimableReward(msg.sender, amount);
 
         // Mark it claimed and send the token.
         rewardToken.safeTransfer(msg.sender, claimable);
@@ -85,10 +85,10 @@ contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistrib
 
     /* ============ Internal Functions ============ */
 
-    function _getClaimable(address account, uint256 amount) internal view returns (uint256) {
+    function _getClaimableReward(address account, uint256 amount) internal view returns (uint256) {
         if (account == address(0)) revert InvalidAddress();
         if (amount == 0) revert InvalidAmount();
-        uint256 claimed = getClaimed(account);
+        uint256 claimed = getClaimedReward(account);
         if (claimed >= amount) {
             return 0;
         }
