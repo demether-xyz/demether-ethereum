@@ -8,13 +8,38 @@
     "test_fork": "forge test --match-test test_fork --fork-url https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW --fork-block-number 20370368 -vv",
     "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
     "lint": "solhint --max-warnings 0 \"src/**/*.sol\"",
-    "slither": "slither ."
+    "slither": "slither .",
+    "deploy": "DEBUG=deployment npx hardhat run --network arbitrum scripts/deposits_manager_L2_propose_upgrade.js"
   },
   "dependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
+    "@nomicfoundation/hardhat-ethers": "^3.0.7",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
+    "@nomicfoundation/hardhat-ignition": "^0.15.5",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.5",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.9",
+    "@nomicfoundation/ignition-core": "^0.15.5",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/hardhat-upgrades": "^3.2.1",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.19",
+    "@types/mocha": "^10.0.7",
+    "chai": "4.3.7",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2",
+    "hardhat": "^2.22.9",
+    "hardhat-gas-reporter": "^2.2.1",
     "prettier": "^3.3.2",
     "prettier-plugin-solidity": "^1.3.1",
     "solhint": "^5.0.3",
-    "solhint-plugin-prettier": "^0.1.0"
+    "solhint-plugin-prettier": "^0.1.0",
+    "solidity-coverage": "^0.8.12",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.5.4"
   }
 }

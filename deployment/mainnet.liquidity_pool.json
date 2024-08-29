@@ -1,0 +1,9 @@
+{
+    "name": "liquidity_pool",
+    "address": "0x8BFD12c3348F6754AC11c4Bb365F200E0c781675",
+    "dependencies": {
+        "deposits_manager_L1": "0xd213d8e1b044c55b4b4ea16a701e530381d180a0"
+    },
+    "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+    "date": "2024-08-29T05:24:14.188Z"
+}
