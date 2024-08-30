@@ -21,7 +21,6 @@ import { DOFT } from "../src/DOFT.sol";
 import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
-import { Messenger } from "../src/Messenger.sol";
 
 import { WETH } from "./mocks/WETH.sol";
 import { MockStarGate } from "./mocks/MockStarGate.sol";
@@ -169,6 +168,8 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         depositsManagerL1.setToken(address(l1token));
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
+
+        // https://etherscan.io/address/0xbAFA44EFE7901E04E39Dad13167D089C559c1138#code
         liquidityPool.setFraxMinter(address(frxETHMinterContract));
         liquidityPool.setCurvePool(address(new MockCurvePool()));
 
