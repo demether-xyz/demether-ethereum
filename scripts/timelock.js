@@ -13,6 +13,16 @@ function getSettings(network) {
           "0x2C871ad626E775092F1762a884F582a74B97b29B",
         ],
       };
+    case "mainnet":
+      return {
+        proposers: ["0xCFf65f5617cc5ed358bB7AC95eF6F75BdAA23D67"],
+        executors: [
+          "0xCFf65f5617cc5ed358bB7AC95eF6F75BdAA23D67",
+          "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+          "0x8974E27d6f0CeC47ED4c6469cc5e81562A4292b9",
+          "0x2C871ad626E775092F1762a884F582a74B97b29B",
+        ],
+      };
   }
 }
 async function main() {

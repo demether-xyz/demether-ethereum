@@ -9,7 +9,8 @@
     "prettier": "npx prettier --write '{test,scripts,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
     "lint": "solhint --max-warnings 0 \"src/**/*.sol\"",
     "slither": "slither .",
-    "deploy": "DEBUG=deployment npx hardhat run --network arbitrum scripts/deposits_manager_L2_propose_upgrade.js"
+    "deploy": "DEBUG=deployment npx hardhat run --network mainnet scripts/messenger.js",
+    "verify": "npx hardhat verify --network mainnet 0x488F2e0603D0856418e544E67E60858537FC005C"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",

@@ -5,13 +5,13 @@ function getSettings(network) {
   switch (network) {
     case "sepolia":
       return {
-        owner: "0xCFf65f5617cc5ed358bB7AC95eF6F75BdAA23D67",
-        service: "0x20dF03A9EF9A72aC4f77Afb1Ca6e96846FCB0015",
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
       };
     case "mainnet":
       return {
-        owner: "0xCFf65f5617cc5ed358bB7AC95eF6F75BdAA23D67",
-        service: "0x20dF03A9EF9A72aC4f77Afb1Ca6e96846FCB0015",
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
       };
   }
 }

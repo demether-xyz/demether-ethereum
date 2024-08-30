@@ -163,7 +163,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _bridgeIds Array of bridge IDs
     /// @param _routers Array of corresponding router addresses
     /// @param _owner Address to set as the LayerZero delegate
-    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyOwner {
+    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyService {
         if (_bridgeIds.length != _routers.length) revert InvalidParametersLength();
 
         for (uint256 i = 0; i < _bridgeIds.length; i++) {

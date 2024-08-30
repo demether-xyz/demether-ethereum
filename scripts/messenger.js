@@ -5,23 +5,29 @@ function getSettings(network) {
   switch (network) {
     case "mainnet":
       return {
-        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+      };
+    case "arbitrum":
+      return {
+        weth: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
         service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
       };
   }
 }
 
 async function main() {
-  const list = ["deposits_manager_L1"];
+  const deposit_manager = network.name === "mainnet" ? "deposits_manager_L1" : "deposits_manager_L2";
+  const list = [deposit_manager, "timelock"];
   let dependencies = await getDependencies(list, network.name);
   const settings = getSettings(network.name);
 
   await dependenciesDeployer({
-    name: "liquidity_pool",
+    name: "messenger",
     params: {
-      name: "LiquidityPool",
+      name: "Messenger",
       isProxy: true,
-      params: [dependencies.deposits_manager_L1, settings.owner, settings.service],
+      params: [settings.weth, dependencies[deposit_manager], settings.service, settings.service],
     },
     deployerFunction: deployer,
     dependencies,
