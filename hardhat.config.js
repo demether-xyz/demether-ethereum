@@ -58,7 +58,10 @@ module.exports = {
     cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN
+    apiKey: {
+      mainnet: process.env.ETHERSCAN,
+      arbitrumOne: process.env.ARBICAN,
+    }
   },
   defender: {
     apiKey: process.env.DEFENDER_TEAM_API_KEY,
