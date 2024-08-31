@@ -11,6 +11,9 @@ contract Settings is Script {
     }
 
     function _L1_settings_arbitrum() internal {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
         // Address of your deployed contract
         Messenger messengerL1 = Messenger(payable(0x488F2e0603D0856418e544E67E60858537FC005C));
 
@@ -19,23 +22,25 @@ contract Settings is Script {
         uint32 ARBITRUM = 42161;
         uint32 L2_EID = 30110; // arbitrum
         address messengerL2 = 0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7;
+        uint128 gas = 200_000;
+        bytes memory options = abi.encode(gas);
 
-        // Encode the value 200_000
-        bytes memory encoded = abi.encode(200_000);
-
-        // Print the encoded bytes
-        console.log("abi.encode(200_000) as bytes:");
-        console.logBytes(encoded);
+        console.log(messengerL1.LAYERZERO());
 
         IMessenger.Settings memory settings = IMessenger.Settings(
-            LAYERZERO,
-            ARBITRUM,
-            L2_EID,
-            messengerL2,
-            10 gwei, // min fee
-            0, // slippage
-            abi.encode(200_000), // gas as uint128
-            true // native ETH
-        );
+                LAYERZERO,
+                ARBITRUM,
+                L2_EID,
+                messengerL2,
+                10 gwei, // min fee
+                0, // slippage
+                options, // gas as uint128
+                true // native ETH
+            );
+
+        // Call setSettingsMessages
+        messengerL1.setSettingsMessages(ARBITRUM, settings);
+
+        vm.stopBroadcast();
     }
 }

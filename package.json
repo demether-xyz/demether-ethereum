@@ -9,9 +9,10 @@
     "prettier": "npx prettier --write '{test,scripts,script,src,tasks}/{**/*,*}.{js,ts,jsx,tsx,sol}'",
     "lint": "solhint --max-warnings 0 \"src/**/*.sol\"",
     "slither": "slither .",
-    "deploy": "DEBUG=deployment npx hardhat run --network arbitrum scripts/messenger.js",
+    "deploy": "DEBUG=deployment npx hardhat run --network mainnet scripts/messenger_upgrade.js",
     "verify": "npx hardhat verify --network arbitrum 0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7",
-    "script": "forge script --chain mainnet script/Settings.s.sol:Settings"
+    "script": "forge script --rpc-url https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW script/Settings.s.sol:Settings --broadcast",
+    "local": "anvil --fork-url https://blissful-late-tent.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",

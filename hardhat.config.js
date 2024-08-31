@@ -40,6 +40,17 @@ function createTestnetConfig(network) {
 
 module.exports = {
   networks: {
+    local: {
+      url: "http://127.0.0.1:8545/",
+      accounts: {
+        count: 20,
+        initialIndex: 0,
+        mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0",
+      },
+      chainId: 1,
+      timeout: 60_000 * 30,
+    },
     mainnet: createTestnetConfig("mainnet"),
     arbitrum: createTestnetConfig("arbitrum"),
     sepolia: createTestnetConfig("sepolia"),
