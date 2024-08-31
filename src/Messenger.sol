@@ -228,8 +228,8 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _origin Origin information of the message
     /// @return bool Indicating if initialization is allowed
     function allowInitializePath(Origin calldata _origin) public view virtual returns (bool) {
-        Settings memory _settings = settingsMessages[_origin.srcEid];
-        return addressToBytes32(_settings.toAddress) == _origin.sender;
+        Settings memory settings = settingsMessagesBridges[LAYERZERO][_origin.srcEid];
+        return addressToBytes32(settings.toAddress) == _origin.sender;
     }
 
     /// @notice Quotes the fee for a LayerZero message

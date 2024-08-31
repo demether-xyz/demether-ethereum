@@ -17,7 +17,7 @@ const deployer = async function ({ name, params, isProxy = true, options }) {
 
 const upgrader = async function ({ name, address }) {
   const Contract = await ethers.getContractFactory(name);
-  const contract = await upgrades.upgradeProxy(address, Contract, {timeout: 60_000 * 30});
+  const contract = await upgrades.upgradeProxy(address, Contract, { timeout: 60_000 * 30 });
   debug(name, "upgraded");
   return contract;
 };

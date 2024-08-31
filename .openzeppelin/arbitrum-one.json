@@ -631,6 +631,233 @@
         },
         "namespaces": {}
       }
+    },
+    "49e173571db86453c0a3792b0f39aff31ac5c333b8233f57d49d9f69f7a57043": {
+      "address": "0x71b3f4BFa1cD46cE9120dcA55a06b7Fd858bb2D7",
+      "txHash": "0x934479a9b05c97092ac6977b949f36c110a03367f88d789bf6a397a0e9689aaa",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "service",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableAccessControl",
+            "src": "src/OwnableAccessControl.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "wETH",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_contract(IWETH9)8254",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:47"
+          },
+          {
+            "label": "depositsManager",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_address",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:50"
+          },
+          {
+            "label": "routers",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_uint8,t_address)",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:53"
+          },
+          {
+            "label": "settingsMessages",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_uint32,t_struct(Settings)8102_storage)",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:56"
+          },
+          {
+            "label": "settingsMessagesBridges",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_mapping(t_uint8,t_mapping(t_uint32,t_struct(Settings)8102_storage))",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:59"
+          },
+          {
+            "label": "settingsTokens",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_mapping(t_uint32,t_struct(Settings)8102_storage)",
+            "contract": "Messenger",
+            "src": "src/Messenger.sol:62"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes_storage": {
+            "label": "bytes",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IWETH9)8254": {
+            "label": "contract IWETH9",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_uint32,t_struct(Settings)8102_storage)": {
+            "label": "mapping(uint32 => struct IMessenger.Settings)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_address)": {
+            "label": "mapping(uint8 => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_mapping(t_uint32,t_struct(Settings)8102_storage))": {
+            "label": "mapping(uint8 => mapping(uint32 => struct IMessenger.Settings))",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Settings)8102_storage": {
+            "label": "struct IMessenger.Settings",
+            "members": [
+              {
+                "label": "bridgeId",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "chainId",
+                "type": "t_uint32",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "bridgeChainId",
+                "type": "t_uint32",
+                "offset": 5,
+                "slot": "0"
+              },
+              {
+                "label": "toAddress",
+                "type": "t_address",
+                "offset": 9,
+                "slot": "0"
+              },
+              {
+                "label": "minFee",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "maxSlippage",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "options",
+                "type": "t_bytes_storage",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "nativeTransfer",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      }
     }
   }
 }
