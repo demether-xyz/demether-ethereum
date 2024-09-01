@@ -64,6 +64,10 @@ interface IDepositsManager {
     /// @param newMaxStaleness New maximum staleness value
     event MaxRateStalenessUpdated(uint256 newMaxStaleness);
 
+    /// @notice Emitted when the vault address is updated
+    /// @param newVault The address of the newly set vault
+    event VaultSet(address indexed newVault);
+
     /// @dev Handles cross-chain message reception
     /// @param chainId Originating chain ID
     /// @param message Encoded message data

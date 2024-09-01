@@ -14,6 +14,7 @@ import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
 import { Messenger } from "../src/Messenger.sol";
+import { ClaimsVault } from "../src/ClaimsVault.sol";
 import { IStrategy } from "@eigenlayer/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 
@@ -57,6 +58,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     Messenger internal messengerL1;
     Messenger internal messengerL2;
     LiquidityPool internal liquidityPool;
+    ClaimsVault internal vault;
 
     WETH public wETHL1;
     WETH public wETHL2;
@@ -127,6 +129,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         );
         messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL1), "messengerL1");
+
+        // deploy claim vault
+        vault = new ClaimsVault(address(depositsManagerL1));
+        vm.label(address(vault), "vault");
     }
 
     function setUpL2() public {
@@ -168,6 +174,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         depositsManagerL1.setToken(address(l1token));
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
+        depositsManagerL1.setVault(address(vault));
 
         // https://etherscan.io/address/0xbAFA44EFE7901E04E39Dad13167D089C559c1138#code
         liquidityPool.setFraxMinter(address(frxETHMinterContract));
@@ -223,10 +230,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         );
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
-        messengerL2.setSettingsTokens(
-            L1_EID,
-            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "", true)
-        );
+        messengerL2.setSettingsTokens(L1_EID, IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(vault), 10 gwei, 25e14, "", true));
 
         // set token peers >> test L1 to L2 transfers
         l1token.setPeer(L2_EID, addressToBytes32(address(l2token)));

@@ -24,6 +24,7 @@ import { IDOFT } from "./interfaces/IDOFT.sol";
 import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
 import { IMessenger } from "./interfaces/IMessenger.sol";
 import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { IClaimsVault } from "./interfaces/IClaimsVault.sol";
 import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
 /// @title L1 Deposits Manager for Demether Finance
@@ -48,6 +49,9 @@ contract DepositsManagerL1 is
     ILiquidityPool public pool;
     /// @dev Messenger for handling cross-chain messages
     IMessenger public messenger;
+
+    /// @notice Instance of the vault with funds from transfers
+    IClaimsVault public vault;
 
     /// @notice Initializes the contract with essential addresses and flags
     /// @param _owner Owner address with admin privileges
@@ -140,6 +144,12 @@ contract DepositsManagerL1 is
     /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external whenNotPaused nonReentrant {
         if (address(pool) == address(0)) revert InstanceNotSet();
+
+        // claim funds from vault
+        if (address(vault) != address(0) && address(vault).balance != 0) {
+            vault.claimFunds();
+        }
+
         // slither-disable-next-line arbitrary-send-eth
         pool.processLiquidity{ value: address(this).balance }();
     }
@@ -205,6 +215,14 @@ contract DepositsManagerL1 is
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
+    }
+
+    /// @notice Sets the address of the claims vault
+    /// @param _vault The address of the new claims vault
+    function setVault(address _vault) external onlyOwner {
+        if (_vault == address(0)) revert InvalidAddress();
+        vault = IClaimsVault(_vault);
+        emit VaultSet(_vault);
     }
 
     /// @notice Pauses all deposit and liquidity operations
