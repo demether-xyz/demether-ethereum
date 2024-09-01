@@ -69,7 +69,6 @@ contract Settings is Script {
 
         IDOFT token = IDOFT(_token);
         address sender = 0x4C0301d076D90468143C2065BBBC78149f1FcAF1;
-        console.log("S", msg.sender);
         uint256 amount = token.balanceOf(sender);
         uint256 _fee = 500_000 gwei;
 
