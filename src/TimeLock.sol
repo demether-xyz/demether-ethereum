@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/governance/TimelockController.sol";
+import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract TimeLock is TimelockController {
     constructor(

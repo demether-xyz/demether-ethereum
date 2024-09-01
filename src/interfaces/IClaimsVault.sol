@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IOFT } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
-
 /// @title IClaimsVault Interface for Demether Finance
 /// @dev Defines the external functions for the ClaimsVault contract
 /// @notice Interface for interacting with the ClaimsVault contract

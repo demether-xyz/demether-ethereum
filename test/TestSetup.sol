@@ -66,6 +66,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     MockStarGate public stargateL2;
     sfrxETH public sfrxETHtoken;
     frxETHMinter public frxETHMinterContract;
+    StrategyBase public sfrxETHStrategy;
 
     event Paused(address account);
     event Unpaused(address account);
@@ -243,7 +244,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         TestSetupEigenLayer.setUp();
 
         // deploy sfrxETH strategy
-        StrategyBase sfrxETHStrategy = StrategyBase(
+        sfrxETHStrategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),

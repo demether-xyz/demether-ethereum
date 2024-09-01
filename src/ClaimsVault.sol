@@ -17,7 +17,7 @@ pragma solidity ^0.8.26;
 /// @dev Manages the receive of StartGate or other funds where gas limit is an issue on UUPS contracts
 contract ClaimsVault {
     /// @notice Manager of the funds
-    address public immutable manager;
+    address public immutable MANAGER;
 
     /// @notice Custom errors
     error InvalidAddress();
@@ -27,13 +27,14 @@ contract ClaimsVault {
     /// @param _manager Address of the LiquidityPool
     constructor(address _manager) {
         if (_manager == address(0)) revert InvalidAddress();
-        manager = _manager;
+        MANAGER = _manager;
     }
 
     /// @notice Allows LiquidityPool to claim any ETH received
     function claimFunds() external {
-        if (msg.sender != manager) revert Unauthorized();
-        (bool sent, ) = manager.call{ value: address(this).balance }("");
+        if (msg.sender != MANAGER) revert Unauthorized();
+        // slither-disable-next-line arbitrary-send-eth,low-level-calls
+        (bool sent, ) = MANAGER.call{ value: address(this).balance }("");
         if (!sent) revert TransferFailed();
     }
 
