@@ -103,6 +103,10 @@ contract DepositsManagerL1 is
             if (settings.bridgeChainId == 0) revert InvalidChainId();
 
             amountOut = getConversionAmount(_amountIn);
+
+            // remove dust for LayerZero
+            amountOut = _removeDust(amountOut);
+
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
@@ -131,6 +135,13 @@ contract DepositsManagerL1 is
         // add liquidity
         // slither-disable-next-line arbitrary-send-eth
         pool.addLiquidity{ value: address(this).balance }();
+    }
+
+    /// @dev Internal function to remove dust from the given local decimal amount.
+    function _removeDust(uint256 _amountLD) internal view returns (uint256 amountLD) {
+        uint256 decimalConversionRate = token.decimalConversionRate();
+        // slither-disable-next-line divide-before-multiply
+        return (_amountLD / decimalConversionRate) * decimalConversionRate;
     }
 
     /// @notice Add liquidity without minting tokens
