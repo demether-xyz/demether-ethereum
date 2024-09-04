@@ -49,7 +49,7 @@ contract SetRoutersTest is TestSetup {
         address[] memory _routers = new address[](1);
 
         vm.startPrank(bob);
-        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        vm.expectRevert(abi.encodeWithSelector(OwnableAccessControl.UnauthorizedService.selector, bob));
         messengerL1.setRouters(_bridgeIds, _routers, address(bob));
         vm.stopPrank();
     }

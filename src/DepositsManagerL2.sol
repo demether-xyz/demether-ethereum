@@ -165,6 +165,10 @@ contract DepositsManagerL2 is
             if (settings.bridgeChainId == 0) revert InvalidChainId();
 
             amountOut = getConversionAmount(_amountIn);
+
+            // remove dust for LayerZero
+            amountOut = _removeDust(amountOut);
+
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
@@ -189,6 +193,13 @@ contract DepositsManagerL2 is
             (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
             if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
         }
+    }
+
+    /// @dev Internal function to remove dust from the given local decimal amount.
+    function _removeDust(uint256 _amountLD) internal view returns (uint256 amountLD) {
+        uint256 decimalConversionRate = token.decimalConversionRate();
+        // slither-disable-next-line divide-before-multiply
+        return (_amountLD / decimalConversionRate) * decimalConversionRate;
     }
 
     /// @notice Calculates the output amount based on input and current rate

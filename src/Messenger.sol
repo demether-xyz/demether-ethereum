@@ -163,7 +163,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _bridgeIds Array of bridge IDs
     /// @param _routers Array of corresponding router addresses
     /// @param _owner Address to set as the LayerZero delegate
-    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyOwner {
+    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyService {
         if (_bridgeIds.length != _routers.length) revert InvalidParametersLength();
 
         for (uint256 i = 0; i < _bridgeIds.length; i++) {
@@ -228,8 +228,8 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _origin Origin information of the message
     /// @return bool Indicating if initialization is allowed
     function allowInitializePath(Origin calldata _origin) public view virtual returns (bool) {
-        Settings memory _settings = settingsMessages[_origin.srcEid];
-        return addressToBytes32(_settings.toAddress) == _origin.sender;
+        Settings memory settings = settingsMessagesBridges[LAYERZERO][_origin.srcEid];
+        return addressToBytes32(settings.toAddress) == _origin.sender;
     }
 
     /// @notice Quotes the fee for a LayerZero message

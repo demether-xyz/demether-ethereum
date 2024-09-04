@@ -156,8 +156,8 @@ contract SetEigenLayerTest is TestSetup {
         );
         LiquidityPool liquidityPool1 = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), role.admin, data)));
 
-        vm.expectRevert(ILiquidityPool.LSTMintingNotSet.selector);
-        liquidityPool1.setEigenLayer(address(strategyManager), address(address(bob)), address(delegation));
+        vm.expectRevert(ILiquidityPool.InvalidEigenLayerStrategy.selector);
+        liquidityPool1.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
         vm.stopPrank();
     }
 

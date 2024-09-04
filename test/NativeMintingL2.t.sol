@@ -56,7 +56,7 @@ contract NativeMintingL2 is TestSetup {
         assertEq(wETHL2.balanceOf(address(depositsManagerL2)), 0);
 
         // 0.2% paid to the router
-        assertEq(address(depositsManagerL1).balance, 99.8 ether);
+        assertEq(address(vault).balance, 99.8 ether);
     }
 
     /// @dev Slippage cost higher than fee, creates a whole
@@ -106,7 +106,7 @@ contract NativeMintingL2 is TestSetup {
 
         uint256 balance = wETHL2.balanceOf(address(depositsManagerL2));
         depositsManagerL2.syncTokens{ value: 10 gwei }(balance);
-        assertEq(address(depositsManagerL1).balance, 100 ether);
+        assertEq(address(vault).balance, 100 ether);
         depositsManagerL1.processLiquidity();
 
         uint256 oftSupply = l1token.totalSupply() + l2token.totalSupply();
