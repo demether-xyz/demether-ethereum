@@ -2,8 +2,9 @@
     "name": "liquidity_pool",
     "address": "0x0fE3393330d9dE2b9A4541b87Cc5f23C50443352",
     "dependencies": {
-        "deposits_manager_L1": "0xEd58cD5Bf2e00ACeaFeC9e56e972E44f34Bb58c3"
+        "deposits_manager_L1": "0xEd58cD5Bf2e00ACeaFeC9e56e972E44f34Bb58c3",
+        "liquidity_pool": "0x0fE3393330d9dE2b9A4541b87Cc5f23C50443352"
     },
     "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
-    "date": "2024-08-30T03:07:38.006Z"
+    "date": "2024-09-04T04:17:18.508Z"
 }

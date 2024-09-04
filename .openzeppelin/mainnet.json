@@ -516,7 +516,7 @@
             "label": "fraxMinter",
             "offset": 0,
             "slot": "209",
-            "type": "t_contract(IfrxETHMinter)19049",
+            "type": "t_contract(IfrxETHMinter)21501",
             "contract": "LiquidityPool",
             "src": "src/LiquidityPool.sol:70"
           },
@@ -548,7 +548,7 @@
             "label": "frxETHCurvePool",
             "offset": 0,
             "slot": "213",
-            "type": "t_contract(ICurvePool)18525",
+            "type": "t_contract(ICurvePool)20977",
             "contract": "LiquidityPool",
             "src": "src/LiquidityPool.sol:82"
           },
@@ -556,7 +556,7 @@
             "label": "symbioticSfrxETH",
             "offset": 0,
             "slot": "214",
-            "type": "t_contract(IDefaultCollateral)18598",
+            "type": "t_contract(IDefaultCollateral)21050",
             "contract": "LiquidityPool",
             "src": "src/LiquidityPool.sol:85"
           }
@@ -578,11 +578,11 @@
             "label": "bool",
             "numberOfBytes": "1"
           },
-          "t_contract(ICurvePool)18525": {
+          "t_contract(ICurvePool)20977": {
             "label": "contract ICurvePool",
             "numberOfBytes": "20"
           },
-          "t_contract(IDefaultCollateral)18598": {
+          "t_contract(IDefaultCollateral)21050": {
             "label": "contract IDefaultCollateral",
             "numberOfBytes": "20"
           },
@@ -598,7 +598,7 @@
             "label": "contract IStrategyManager",
             "numberOfBytes": "20"
           },
-          "t_contract(IfrxETHMinter)19049": {
+          "t_contract(IfrxETHMinter)21501": {
             "label": "contract IfrxETHMinter",
             "numberOfBytes": "20"
           },
@@ -2212,6 +2212,247 @@
           },
           "t_contract(IMessenger)8118": {
             "label": "contract IMessenger",
+            "numberOfBytes": "20"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      }
+    },
+    "2368fbd0bffc4ebd0077b93bd89a9be47b63d7bcd823424635a43ada714a1a3e": {
+      "address": "0x93112CE17D0927702300291fb406d37c59Bc6629",
+      "txHash": "0x09eb04c780194f7ab09da590c31318de7850fde69fe64229de053320df7c21dd",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "service",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableAccessControl",
+            "src": "src/OwnableAccessControl.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "strategy",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_uint8",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:46"
+          },
+          {
+            "label": "depositsManager",
+            "offset": 1,
+            "slot": "202",
+            "type": "t_address",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:49"
+          },
+          {
+            "label": "sfrxETH",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_contract(IsfrxETH)3057",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:52"
+          },
+          {
+            "label": "totalShares",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_uint256",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:55"
+          },
+          {
+            "label": "protocolTreasury",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_address",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:58"
+          },
+          {
+            "label": "protocolFee",
+            "offset": 0,
+            "slot": "206",
+            "type": "t_uint256",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:61"
+          },
+          {
+            "label": "protocolAccruedFees",
+            "offset": 0,
+            "slot": "207",
+            "type": "t_uint256",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:64"
+          },
+          {
+            "label": "lastTotalPooledEther",
+            "offset": 0,
+            "slot": "208",
+            "type": "t_uint256",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:67"
+          },
+          {
+            "label": "fraxMinter",
+            "offset": 0,
+            "slot": "209",
+            "type": "t_contract(IfrxETHMinter)6039",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:70"
+          },
+          {
+            "label": "eigenLayerStrategyManager",
+            "offset": 0,
+            "slot": "210",
+            "type": "t_contract(IStrategyManager)1745",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:73"
+          },
+          {
+            "label": "eigenLayerStrategy",
+            "offset": 0,
+            "slot": "211",
+            "type": "t_contract(IStrategy)1528",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:76"
+          },
+          {
+            "label": "eigenLayerDelegationManager",
+            "offset": 0,
+            "slot": "212",
+            "type": "t_contract(IDelegationManager)507",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:79"
+          },
+          {
+            "label": "frxETHCurvePool",
+            "offset": 0,
+            "slot": "213",
+            "type": "t_contract(ICurvePool)5905",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:82"
+          },
+          {
+            "label": "symbioticSfrxETH",
+            "offset": 0,
+            "slot": "214",
+            "type": "t_contract(IDefaultCollateral)5946",
+            "contract": "LiquidityPool",
+            "src": "src/LiquidityPool.sol:85"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(ICurvePool)5905": {
+            "label": "contract ICurvePool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDefaultCollateral)5946": {
+            "label": "contract IDefaultCollateral",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IDelegationManager)507": {
+            "label": "contract IDelegationManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IStrategy)1528": {
+            "label": "contract IStrategy",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IStrategyManager)1745": {
+            "label": "contract IStrategyManager",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IfrxETHMinter)6039": {
+            "label": "contract IfrxETHMinter",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IsfrxETH)3057": {
+            "label": "contract IsfrxETH",
             "numberOfBytes": "20"
           },
           "t_uint256": {
