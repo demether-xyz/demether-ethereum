@@ -72,6 +72,7 @@ module.exports = {
     apiKey: {
       mainnet: process.env.ETHERSCAN,
       arbitrumOne: process.env.ARBICAN,
+      sepolia: process.env.ETHERSCAN,
     }
   },
   defender: {

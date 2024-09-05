@@ -13,11 +13,16 @@ function getSettings(network) {
         weth: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
         service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
       };
+    case "sepolia":
+      return {
+        weth: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+        service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+      };
   }
 }
 
 async function main() {
-  const deposit_manager = network.name === "mainnet" ? "deposits_manager_L1" : "deposits_manager_L2";
+  const deposit_manager = ["mainnet", "sepolia"].includes(network.name) ? "deposits_manager_L1" : "deposits_manager_L2";
   const list = [deposit_manager, "timelock"];
   let dependencies = await getDependencies(list, network.name);
   const settings = getSettings(network.name);

@@ -4,6 +4,9 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 import "../src/interfaces/ILiquidityPool.sol";
 import "../src/OwnableAccessControl.sol";
+import { frxETH } from "@frxETH/frxETH.sol";
+import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
+import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
 
 contract InitializeTest is TestSetup {
     function test_RevertWhenAlreadyInitialize() external {

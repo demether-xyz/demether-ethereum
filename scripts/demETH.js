@@ -17,18 +17,22 @@ function getSettings(network) {
         owner: "0x0Fb539EEBE2ED7b69F0534FD01853F34C8A74254",
         layerzero: "0x1a44076050125825900e736c501f859c50fE728c",
       };
+    case "sepolia":
+      return {
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        layerzero: "0x6EDCE65403992e310A62460808c4b910D972f10f",
+      };
   }
 }
 
 async function main() {
-  const deposit_manager = network.name === "mainnet" ? "deposits_manager_L1" : "deposits_manager_L2";
+  const deposit_manager = ["mainnet", "sepolia"].includes(network.name) ? "deposits_manager_L1" : "deposits_manager_L2";
   const list = [deposit_manager];
-  const name = network.name === "mainnet" ? "demETH_L1" : "demETH_" + network.name;
   let dependencies = await getDependencies(list, network.name);
   const settings = getSettings(network.name);
 
   await dependenciesDeployer({
-    name: name,
+    name: "demETH",
     params: {
       name: "DOFT",
       isProxy: true,

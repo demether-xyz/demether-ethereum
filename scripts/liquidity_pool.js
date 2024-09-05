@@ -8,6 +8,11 @@ function getSettings(network) {
         owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
         service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
       };
+    case "sepolia":
+      return {
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        service: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+      };
   }
 }
 
