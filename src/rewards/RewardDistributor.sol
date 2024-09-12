@@ -1,110 +1,116 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import { IRewardDistributor } from "../interfaces/IRewardDistributor.sol";
+// *******************************************************
+// *    ____                      _   _                  *
+// *   |  _ \  ___ _ __ ___   ___| |_| |__   ___ _ __    *
+// *   | | | |/ _ \ '_ ` _ \ / _ \ __| '_ \ / _ \ '__|   *
+// *   | |_| |  __/ | | | | |  __/ |_| | | |  __/ |      *
+// *   |____/ \___|_| |_| |_|\___|\__|_| |_|\___|_|      *
+// *******************************************************
+// Demether Finance: https://github.com/demetherdefi
 
-contract RewardDistributor is Ownable, Pausable, ReentrancyGuard, IRewardDistributor {
-    using SafeERC20 for IERC20;
+// Primary Author(s)
+// Juan C. Dorado: https://github.com/jdorado/
 
-    /* ============ State Variables ============ */
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableAccessControl } from "../OwnableAccessControl.sol";
+import { MerkleProofUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
+import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
-    bytes32 public totalRewardMerkleRoot;
-    uint256 public claimStartTime;
-    uint256 public claimEndTime;
+/// @title RewardDistributor2
+/// @notice This contract manages the distribution of rewards using a Merkle tree for efficient verification
+/// @dev This contract is upgradeable, pausable, and uses a Merkle tree for reward distribution
+contract RewardDistributor is Initializable, OwnableAccessControl, PausableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
+    /// @notice The ERC20 token used for rewards
+    IERC20Upgradeable public token;
 
-    IERC20 public rewardToken;
-    mapping(address user => uint256 amount) private claimedAmount;
+    /// @notice The Merkle root of the reward distribution tree
+    bytes32 public merkleRoot;
 
-    /* ============ Constructor ============ */
+    /// @notice Mapping to track claimed amounts for each address
+    mapping(address => uint256) public claimed;
 
-    constructor(IERC20 _reward, bytes32 _totalRewardMerkleRoot) Ownable() {
-        rewardToken = _reward;
-        totalRewardMerkleRoot = _totalRewardMerkleRoot;
-        claimStartTime = block.timestamp;
-        claimEndTime = claimStartTime + 90 days;
+    /// @notice Emitted when a user claims their reward
+    /// @param account The address of the user claiming the reward
+    /// @param amount The amount of tokens claimed
+    event Claimed(address indexed account, uint256 amount);
+
+    /// @notice Emitted when the Merkle root is updated
+    /// @param newMerkleRoot The new Merkle root
+    event MerkleRootUpdated(bytes32 newMerkleRoot);
+
+    /// @notice Emitted when tokens are withdrawn from the contract
+    /// @param amount The amount of tokens withdrawn
+    event TokensWithdrawn(uint256 amount);
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    /* ============ External Getters ============ */
+    /// @notice Initializes the contract
+    /// @param _token The address of the ERC20 token used for rewards
+    /// @param _merkleRoot The initial Merkle root
+    function initialize(IERC20Upgradeable _token, bytes32 _merkleRoot) public initializer {
+        __ReentrancyGuard_init();
+        __Pausable_init();
+        __Ownable_init();
+        __UUPSUpgradeable_init();
 
-    function getClaimedReward(address account) public view returns (uint256) {
-        if (account == address(0)) revert InvalidAddress();
-        return claimedAmount[account];
+        token = _token;
+        merkleRoot = _merkleRoot;
     }
 
-    function getClaimableReward(address account, uint256 amount, bytes32[] calldata merkleProof) public view returns (uint256) {
-        if (account == address(0)) revert InvalidAddress();
-        if (amount == 0) revert InvalidAmount();
-        if (merkleProof.length == 0) revert InvalidMerkleProof();
-        if (block.timestamp >= claimEndTime) {
-            return 0;
-        }
+    /// @notice Allows users to claim their rewards
+    /// @param totalAmount The total amount of tokens allocated to the user
+    /// @param merkleProof The Merkle proof for verification
+    function claim(uint256 totalAmount, bytes32[] calldata merkleProof) external nonReentrant whenNotPaused {
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, totalAmount));
+        require(MerkleProofUpgradeable.verify(merkleProof, merkleRoot, leaf), "Invalid merkle proof");
 
-        if (!verifyProof(account, amount, merkleProof)) {
-            return 0;
-        }
+        uint256 claimableAmount = totalAmount - claimed[msg.sender];
+        require(claimableAmount > 0, "No new tokens to claim");
 
-        return _getClaimableReward(account, amount);
+        claimed[msg.sender] += claimableAmount;
+
+        require(token.transfer(msg.sender, claimableAmount), "Transfer failed");
+
+        emit Claimed(msg.sender, claimableAmount);
     }
 
-    /* ============ External Functions ============ */
-
-    function verifyProof(address account, uint256 amount, bytes32[] calldata merkleProof) public view returns (bool) {
-        if (account == address(0)) revert InvalidAddress();
-        if (amount == 0) revert InvalidAmount();
-        if (merkleProof.length == 0) revert InvalidMerkleProof();
-        bytes32 node = keccak256(abi.encodePacked(account, amount));
-        return MerkleProof.verify(merkleProof, totalRewardMerkleRoot, node);
+    /// @notice Updates the Merkle root
+    /// @param _merkleRoot The new Merkle root
+    function updateMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+        merkleRoot = _merkleRoot;
+        emit MerkleRootUpdated(_merkleRoot);
     }
 
-    function claimReward(uint256 amount, bytes32[] calldata merkleProof) external whenNotPaused nonReentrant {
-        if (amount == 0) revert InvalidAmount();
-        if (merkleProof.length == 0) revert InvalidMerkleProof();
-        if (block.timestamp >= claimEndTime) {
-            revert ClaimPeriodCompleted();
-        }
-
-        //Verify the merkle proof.
-        if (!verifyProof(msg.sender, amount, merkleProof)) {
-            revert InvalidProof();
-        }
-
-        uint256 claimable = _getClaimableReward(msg.sender, amount);
-
-        // Mark it claimed and send the token.
-        rewardToken.safeTransfer(msg.sender, claimable);
-        uint256 userClaimedAmount = claimedAmount[msg.sender];
-        claimedAmount[msg.sender] = userClaimedAmount + claimable;
-        emit ClaimEvent(msg.sender, claimable);
+    /// @notice Allows the owner to withdraw a specified amount of the reward token from the contract
+    /// @param amount The amount of tokens to withdraw
+    function withdrawToken(uint256 amount) external onlyOwner {
+        require(amount > 0, "Amount must be greater than zero");
+        require(amount <= token.balanceOf(address(this)), "Insufficient balance");
+        require(token.transfer(owner(), amount), "Transfer failed");
+        emit TokensWithdrawn(amount);
     }
 
-    /* ============ Internal Functions ============ */
-
-    function _getClaimableReward(address account, uint256 amount) internal view returns (uint256) {
-        if (account == address(0)) revert InvalidAddress();
-        if (amount == 0) revert InvalidAmount();
-        uint256 claimed = getClaimedReward(account);
-        if (claimed >= amount) {
-            return 0;
-        }
-        return amount - claimed;
-    }
-
-    /* ============ Admin functions ============ */
-    function pause() external onlyOwner {
+    /// @notice Pauses all claim operations
+    function pause() external onlyService whenNotPaused {
         _pause();
     }
 
-    function unpause() external onlyOwner {
+    /// @notice Resumes all claim operations
+    function unpause() external onlyService whenPaused {
         _unpause();
     }
 
-    function emergencyWithdraw() external onlyOwner whenPaused {
-        rewardToken.safeTransfer(owner(), rewardToken.balanceOf((address(this))));
+    /// @dev Authorizes upgrades of the contract
+    /// @param _newImplementation Address of the new implementation
+    function _authorizeUpgrade(address _newImplementation) internal view override onlyOwner {
+        require(_newImplementation.code.length > 0, "New implementation must be a contract");
     }
 }
