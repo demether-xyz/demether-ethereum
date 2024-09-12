@@ -10,6 +10,7 @@ const chainIds = {
   mainnet: 1,
   arbitrum: 42161,
   sepolia: 11155111,
+  morph_holesky: 2810,
 };
 
 function createTestnetConfig(network) {
@@ -22,6 +23,9 @@ function createTestnetConfig(network) {
       break;
     case "mainnet":
       url = "https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW";
+      break;
+    case "morph_holesky":
+      url = "https://blissful-late-tent.morph-holesky.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92";
       break;
   }
 
@@ -54,6 +58,7 @@ module.exports = {
     mainnet: createTestnetConfig("mainnet"),
     arbitrum: createTestnetConfig("arbitrum"),
     sepolia: createTestnetConfig("sepolia"),
+    morph_holesky: createTestnetConfig("morph_holesky"),
   },
   solidity: {
     version: "0.8.26",

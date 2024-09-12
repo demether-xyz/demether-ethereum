@@ -2,8 +2,13 @@ const { ethers, upgrades, network, defender } = require("hardhat");
 const debug = require("debug")("deployment");
 const fs = require("fs/promises");
 
-const deployer = async function ({ name, params, isProxy = true, options }) {
-  const Contract = await ethers.getContractFactory(name);
+const deployer = async function ({ name, params, isProxy = true, options })
+{
+  // const signer = ethers.Wallet.fromMnemonic(process.env.MNEMONIC).connect(provider);
+  let owner;
+  [owner] = await ethers.getSigners();
+  owner.estimateGas = 4e6;
+  const Contract = await ethers.getContractFactory(name, owner);
   let contract;
   if (isProxy) {
     contract = await upgrades.deployProxy(Contract, params, options);
