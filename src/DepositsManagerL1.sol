@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
 // *******************************************************
@@ -23,6 +24,7 @@ import { IDOFT } from "./interfaces/IDOFT.sol";
 import { ILiquidityPool } from "./interfaces/ILiquidityPool.sol";
 import { IMessenger } from "./interfaces/IMessenger.sol";
 import { IDepositsManager } from "./interfaces/IDepositsManager.sol";
+import { IClaimsVault } from "./interfaces/IClaimsVault.sol";
 import { OwnableAccessControl } from "./OwnableAccessControl.sol";
 
 /// @title L1 Deposits Manager for Demether Finance
@@ -48,15 +50,26 @@ contract DepositsManagerL1 is
     /// @dev Messenger for handling cross-chain messages
     IMessenger public messenger;
 
+    /// @notice Instance of the vault with funds from transfers
+    IClaimsVault public vault;
+
     /// @notice Initializes the contract with essential addresses and flags
     /// @param _owner Owner address with admin privileges
     /// @param _service Service address for contract control
     function initialize(address _owner, address _service) external initializer onlyProxy {
         if (_owner == address(0) || _service == address(0)) revert InvalidAddress();
+        __DepositsManagerL1_init(_owner, _service);
+    }
+
+    /// @notice Internal function to initialize the contract.
+    /// @param _owner Owner address with admin privileges.
+    /// @param _service Service address for contract control.
+    // solhint-disable-next-line
+    function __DepositsManagerL1_init(address _owner, address _service) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __Pausable_init();
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        __OwnableAccessControl_init(_owner, _service);
     }
 
     /// @notice Handles ETH deposits
@@ -64,6 +77,7 @@ contract DepositsManagerL1 is
     /// @param _fee Fee associated with the transfer
     /// @param _referral Referral address for potential rewards
     /// @return amountOut Amount of tokens minted or transferred
+    // slither-disable-next-line cyclomatic-complexity
     function depositETH(
         uint32 _chainId,
         uint256 _fee,
@@ -71,11 +85,13 @@ contract DepositsManagerL1 is
     ) external payable whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (msg.value == 0 || msg.value <= _fee) revert InvalidAmount();
         if (address(pool) == address(0)) revert InstanceNotSet();
+        if (address(token) == address(0)) revert InvalidAddress();
 
         uint256 _amountIn = msg.value - _fee;
 
         // Mint locally or send to a supported chain
         if (_chainId == 0) {
+            if (_fee > 0) revert InvalidFee();
             amountOut = getConversionAmount(_amountIn);
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
@@ -87,6 +103,10 @@ contract DepositsManagerL1 is
             if (settings.bridgeChainId == 0) revert InvalidChainId();
 
             amountOut = getConversionAmount(_amountIn);
+
+            // remove dust for LayerZero
+            amountOut = _removeDust(amountOut);
+
             if (amountOut == 0) revert InvalidAmount();
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
@@ -117,8 +137,30 @@ contract DepositsManagerL1 is
         pool.addLiquidity{ value: address(this).balance }();
     }
 
+    /// @dev Internal function to remove dust from the given local decimal amount.
+    function _removeDust(uint256 _amountLD) internal view returns (uint256 amountLD) {
+        uint256 decimalConversionRate = token.decimalConversionRate();
+        // slither-disable-next-line divide-before-multiply
+        return (_amountLD / decimalConversionRate) * decimalConversionRate;
+    }
+
+    /// @notice Add liquidity without minting tokens
+    /// @dev Only to be used for balancing, not by end user deposits
+    function addLiquidity() external payable whenNotPaused nonReentrant {
+        if (address(pool) == address(0)) revert InstanceNotSet();
+        // slither-disable-next-line arbitrary-send-eth
+        pool.addLiquidity{ value: msg.value }();
+    }
+
+    /// @notice Processes liquidity, paying out fees and restaking assets
     function processLiquidity() external whenNotPaused nonReentrant {
         if (address(pool) == address(0)) revert InstanceNotSet();
+
+        // claim funds from vault
+        if (address(vault) != address(0) && address(vault).balance != 0) {
+            vault.claimFunds();
+        }
+
         // slither-disable-next-line arbitrary-send-eth
         pool.processLiquidity{ value: address(this).balance }();
     }
@@ -146,7 +188,7 @@ contract DepositsManagerL1 is
         if (_chainId.length != _chainFee.length) revert InvalidParametersLength();
         if (address(messenger) == address(0)) revert InstanceNotSet();
 
-        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, getRate());
+        bytes memory data = abi.encode(MESSAGE_SYNC_RATE, block.number, block.timestamp, getRate());
         uint256 totalFees = 0;
         for (uint256 i = 0; i < _chainId.length; i++) {
             // slither-disable-next-line arbitrary-send-eth,calls-loop
@@ -184,6 +226,14 @@ contract DepositsManagerL1 is
     function setMessenger(address _messenger) external onlyOwner {
         if (_messenger == address(0)) revert InvalidAddress();
         messenger = IMessenger(_messenger);
+    }
+
+    /// @notice Sets the address of the claims vault
+    /// @param _vault The address of the new claims vault
+    function setVault(address _vault) external onlyOwner {
+        if (_vault == address(0)) revert InvalidAddress();
+        vault = IClaimsVault(_vault);
+        emit VaultSet(_vault);
     }
 
     /// @notice Pauses all deposit and liquidity operations

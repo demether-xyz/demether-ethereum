@@ -12,3 +12,8 @@ out/
 .idea
 node_modules
 .lock
+/yarn.lock
+/cache_hardhat/
+artifacts
+broadcast
+local.

@@ -1,0 +1,9 @@
+{
+    "name": "demETH_L1",
+    "address": "0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc",
+    "dependencies": {
+        "deposits_manager_L1": "0xd213d8e1b044c55b4b4ea16a701e530381d180a0"
+    },
+    "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+    "date": "2024-08-29T04:11:14.837Z"
+}

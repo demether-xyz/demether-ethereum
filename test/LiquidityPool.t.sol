@@ -4,6 +4,9 @@ pragma solidity ^0.8.26;
 import "./TestSetup.sol";
 import "../src/interfaces/ILiquidityPool.sol";
 import "../src/OwnableAccessControl.sol";
+import { frxETH } from "@frxETH/frxETH.sol";
+import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
+import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
 
 contract InitializeTest is TestSetup {
     function test_RevertWhenAlreadyInitialize() external {
@@ -156,8 +159,8 @@ contract SetEigenLayerTest is TestSetup {
         );
         LiquidityPool liquidityPool1 = LiquidityPool(payable(proxy.deploy(address(new LiquidityPool()), role.admin, data)));
 
-        vm.expectRevert(ILiquidityPool.LSTMintingNotSet.selector);
-        liquidityPool1.setEigenLayer(address(strategyManager), address(address(bob)), address(delegation));
+        vm.expectRevert(ILiquidityPool.InvalidEigenLayerStrategy.selector);
+        liquidityPool1.setEigenLayer(address(strategyManager), address(sfrxETHStrategy), address(delegation));
         vm.stopPrank();
     }
 

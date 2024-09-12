@@ -18,4 +18,7 @@ interface IDOFT is IERC20, IOFT {
     /// @param _amount The amount of tokens to burn.
     /// @return bool True if the operation was successful.
     function burn(address _from, uint256 _amount) external returns (bool);
+
+    /// @notice Provides a conversion rate when swapping between denominations of SD and LD
+    function decimalConversionRate() external view returns (uint256);
 }

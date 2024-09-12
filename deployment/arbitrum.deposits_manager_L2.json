@@ -1,0 +1,9 @@
+{
+    "name": "deposits_manager_L2",
+    "address": "0x408594BB8d7cdbC7F6c65c82365ed306bE8e7Dab",
+    "dependencies": {
+        "deposits_manager_L2": "0x408594BB8d7cdbC7F6c65c82365ed306bE8e7Dab"
+    },
+    "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+    "date": "2024-09-04T03:59:17.111Z"
+}

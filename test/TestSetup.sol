@@ -6,14 +6,13 @@ import { Test, console } from "forge-std/Test.sol";
 import { TestSetupEigenLayer, StrategyBase, TransparentUpgradeableProxy, StrategyManager } from "./TestSetupEigenLayer.sol";
 import { ProxyTester } from "@foundry-upgrades/ProxyTester.sol";
 import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
-import { frxETH } from "@frxETH/frxETH.sol";
-import { sfrxETH, ERC20 as ERC20_2 } from "@frxETH/sfrxETH.sol";
-import { frxETHMinter } from "@frxETH/frxETHMinter.sol";
+import { IsfrxETH } from "@frxETH/IsfrxETH.sol";
 import { DOFT } from "../src/DOFT.sol";
 import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
 import { Messenger } from "../src/Messenger.sol";
+import { ClaimsVault } from "../src/ClaimsVault.sol";
 import { IStrategy } from "@eigenlayer/contracts/interfaces/IStrategy.sol";
 import { IDelegationManager } from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 
@@ -21,11 +20,12 @@ import { DOFT } from "../src/DOFT.sol";
 import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { DepositsManagerL2, IMessenger } from "../src/DepositsManagerL2.sol";
 import { LiquidityPool } from "../src/LiquidityPool.sol";
-import { Messenger } from "../src/Messenger.sol";
 
 import { WETH } from "./mocks/WETH.sol";
 import { MockStarGate } from "./mocks/MockStarGate.sol";
 import { MockCurvePool } from "./mocks/MockCurvePool.sol";
+import { MockFrxETHMinter } from "./mocks/MockFraxMinter.sol";
+import { IfrxETHMinter } from "../src/interfaces/IfrxETHMinter.sol";
 
 contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     bool internal fork_active;
@@ -58,13 +58,15 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
     Messenger internal messengerL1;
     Messenger internal messengerL2;
     LiquidityPool internal liquidityPool;
+    ClaimsVault internal vault;
 
     WETH public wETHL1;
     WETH public wETHL2;
 
     MockStarGate public stargateL2;
-    sfrxETH public sfrxETHtoken;
-    frxETHMinter public frxETHMinterContract;
+    IsfrxETH public sfrxETHtoken;
+    IfrxETHMinter public frxETHMinterContract;
+    StrategyBase public sfrxETHStrategy;
 
     event Paused(address account);
     event Unpaused(address account);
@@ -74,25 +76,14 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         setUpEndpoints(2, LibraryType.SimpleMessageLib);
 
         // Deploy frxETH, sfrxETH
-        frxETH frxETHtoken = new frxETH(role.admin, role.admin);
-        sfrxETHtoken = new sfrxETH(ERC20_2(address(frxETHtoken)), 1);
-        frxETHMinterContract = new frxETHMinter(
-            0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b,
-            address(frxETHtoken),
-            address(sfrxETHtoken),
-            role.admin,
-            role.admin,
-            ""
-        );
-        vm.prank(role.admin);
-        frxETHtoken.addMinter(address(frxETHMinterContract));
+        frxETHMinterContract = new MockFrxETHMinter();
+        sfrxETHtoken = IsfrxETH(frxETHMinterContract.sfrxETHToken());
 
         // increase sfrxETHtoken rate to 2.0
         frxETHMinterContract.submitAndDeposit{ value: 1 ether }(address(this));
         frxETHMinterContract.submitAndGive{ value: 1 ether }(address(sfrxETHtoken));
-        vm.warp(block.timestamp + 1);
-        sfrxETHtoken.syncRewards();
-        vm.warp(block.timestamp + 1);
+
+        vm.prank(role.admin);
 
         // set-up WETH
         wETHL1 = new WETH();
@@ -128,6 +119,10 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         );
         messengerL1 = Messenger(payable(proxy.deploy(address(new Messenger()), role.admin, data)));
         vm.label(address(messengerL1), "messengerL1");
+
+        // deploy claim vault
+        vault = new ClaimsVault(address(depositsManagerL1));
+        vm.label(address(vault), "vault");
     }
 
     function setUpL2() public {
@@ -169,6 +164,9 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         depositsManagerL1.setToken(address(l1token));
         depositsManagerL1.setLiquidityPool(address(liquidityPool));
         depositsManagerL1.setMessenger(address(messengerL1));
+        depositsManagerL1.setVault(address(vault));
+
+        // https://etherscan.io/address/0xbAFA44EFE7901E04E39Dad13167D089C559c1138#code
         liquidityPool.setFraxMinter(address(frxETHMinterContract));
         liquidityPool.setCurvePool(address(new MockCurvePool()));
 
@@ -222,10 +220,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         );
 
         // StarGate for tokens >> 0.25% allowed slippage / effective is 0.20% on mock
-        messengerL2.setSettingsTokens(
-            L1_EID,
-            IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(depositsManagerL1), 10 gwei, 25e14, "", true)
-        );
+        messengerL2.setSettingsTokens(L1_EID, IMessenger.Settings(STARGATE, L1_EID, L1_EID, address(vault), 10 gwei, 25e14, "", true));
 
         // set token peers >> test L1 to L2 transfers
         l1token.setPeer(L2_EID, addressToBytes32(address(l2token)));
@@ -238,7 +233,7 @@ contract TestSetup is Test, TestHelper, TestSetupEigenLayer {
         TestSetupEigenLayer.setUp();
 
         // deploy sfrxETH strategy
-        StrategyBase sfrxETHStrategy = StrategyBase(
+        sfrxETHStrategy = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
                     address(baseStrategyImplementation),

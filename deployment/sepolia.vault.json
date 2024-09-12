@@ -1,0 +1,9 @@
+{
+    "name": "vault",
+    "address": "0xEd58cD5Bf2e00ACeaFeC9e56e972E44f34Bb58c3",
+    "dependencies": {
+        "deposits_manager_L1": "0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc"
+    },
+    "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+    "date": "2024-09-05T15:43:14.007Z"
+}

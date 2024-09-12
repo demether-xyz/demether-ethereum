@@ -1,0 +1,11 @@
+{
+    "name": "messenger",
+    "address": "0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7",
+    "dependencies": {
+        "deposits_manager_L2": "0x408594BB8d7cdbC7F6c65c82365ed306bE8e7Dab",
+        "timelock": "0x863C1355b1057D59747E401A0e3DDd2D99e1AFd5",
+        "messenger": "0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7"
+    },
+    "deployer": "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+    "date": "2024-08-31T10:54:52.828Z"
+}

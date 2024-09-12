@@ -67,15 +67,31 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _owner Address of the contract owner
     /// @param _service Address of the service account
     function initialize(address _wETH, address _depositsManager, address _owner, address _service) external initializer onlyProxy {
-        if (_depositsManager == address(0) || _owner == address(0) || _service == address(0)) revert InvalidAddress();
+        if (_wETH == address(0) || _depositsManager == address(0) || _owner == address(0) || _service == address(0))
+            revert InvalidAddress();
 
-        __Ownable_init();
+        __Messenger_init(_wETH, _depositsManager, _owner, _service);
+    }
+
+    /// @notice Internal function to initialize the contract.
+    /// @param _wETH Address of the WETH contract.
+    /// @param _depositsManager Address of the deposits manager.
+    /// @param _owner Address of the contract owner.
+    /// @param _service Address of the service account.
+    // solhint-disable-next-line
+    function __Messenger_init(address _wETH, address _depositsManager, address _owner, address _service) internal onlyInitializing {
+        __OwnableAccessControl_init(_owner, _service);
         __UUPSUpgradeable_init();
+        __Messenger_init_unchained(_wETH, _depositsManager);
+    }
 
+    /// @notice Internal function to initialize the state variables specific to Messenger.
+    /// @param _wETH Address of the WETH contract.
+    /// @param _depositsManager Address of the deposits manager.
+    // solhint-disable-next-line
+    function __Messenger_init_unchained(address _wETH, address _depositsManager) internal onlyInitializing {
         wETH = IWETH9(_wETH);
         depositsManager = _depositsManager;
-        setService(_service);
-        transferOwnership(_owner);
 
         if (!wETH.approve(_depositsManager, type(uint256).max)) revert ApprovalFailed();
     }
@@ -147,7 +163,7 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _bridgeIds Array of bridge IDs
     /// @param _routers Array of corresponding router addresses
     /// @param _owner Address to set as the LayerZero delegate
-    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyOwner {
+    function setRouters(uint8[] calldata _bridgeIds, address[] calldata _routers, address _owner) external onlyService {
         if (_bridgeIds.length != _routers.length) revert InvalidParametersLength();
 
         for (uint256 i = 0; i < _bridgeIds.length; i++) {
@@ -212,8 +228,8 @@ contract Messenger is Initializable, OwnableAccessControl, UUPSUpgradeable, IMes
     /// @param _origin Origin information of the message
     /// @return bool Indicating if initialization is allowed
     function allowInitializePath(Origin calldata _origin) public view virtual returns (bool) {
-        Settings memory _settings = settingsMessages[_origin.srcEid];
-        return addressToBytes32(_settings.toAddress) == _origin.sender;
+        Settings memory settings = settingsMessagesBridges[LAYERZERO][_origin.srcEid];
+        return addressToBytes32(settings.toAddress) == _origin.sender;
     }
 
     /// @notice Quotes the fee for a LayerZero message
