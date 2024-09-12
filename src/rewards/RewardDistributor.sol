@@ -55,11 +55,13 @@ contract RewardDistributor is Initializable, OwnableAccessControl, PausableUpgra
     /// @notice Initializes the contract
     /// @param _token The address of the ERC20 token used for rewards
     /// @param _merkleRoot The initial Merkle root
-    function initialize(IERC20Upgradeable _token, bytes32 _merkleRoot) public initializer {
+    /// @param _owner Owner address with admin privileges
+    /// @param _service Service address for contract control
+    function initialize(IERC20Upgradeable _token, bytes32 _merkleRoot, address _owner, address _service) public initializer {
         __ReentrancyGuard_init();
         __Pausable_init();
-        __Ownable_init();
         __UUPSUpgradeable_init();
+        __OwnableAccessControl_init(_owner, _service);
 
         token = _token;
         merkleRoot = _merkleRoot;

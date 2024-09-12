@@ -53,15 +53,13 @@ contract RewardDistributorTest is Test {
         bytes memory initData = abi.encodeWithSelector(
             RewardDistributor.initialize.selector,
             IERC20Upgradeable(address(token)),
-            merkleRoot
+            merkleRoot,
+            owner,
+            owner
         );
 
         // Deploy the proxy
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(implementationContract),
-            address(proxyAdmin),
-            initData
-        );
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(implementationContract), address(proxyAdmin), initData);
 
         // Create a contract instance of RewardDistributor that points to the proxy
         distributor = RewardDistributor(address(proxy));
