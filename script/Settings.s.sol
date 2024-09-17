@@ -12,17 +12,24 @@ import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm
 contract Settings is Script {
     using OptionsBuilder for bytes;
 
-    address _messengerL1 = 0x488F2e0603D0856418e544E67E60858537FC005C;
-    address _messengerL2 = 0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7;
-    address _token = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
+    address _messengerL1 = 0x80e6Bc0bF865DaCaB84c1C818bD3cE966254309B;
+    address _messengerL2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675;
+    address _token_L1 = 0x863C1355b1057D59747E401A0e3DDd2D99e1AFd5;
+    address _token_L2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675;
+
+    // https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts
+    // morph 40322
+
+    uint32 L2_EID = 40322;
 
     function run() public {
-        //        _L1_settings_arbitrum();
+        // _L1_settings_on_L2();
         // _L2_settings_mainnet();
         _L2_send();
+        //_token_setPeer();
     }
 
-    function _L1_settings_arbitrum() internal {
+    function _L1_settings_on_L2() internal {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
@@ -31,8 +38,7 @@ contract Settings is Script {
 
         // Define the parameters for setSettingsMessages
         uint8 LAYERZERO = 1;
-        uint32 ARBITRUM = 42161;
-        uint32 L2_EID = 30110; // arbitrum
+        uint32 L2 = 2810;
         address messengerL2 = _messengerL2;
         uint128 gas = 200_000;
         bytes memory options = abi.encode(gas);
@@ -41,7 +47,7 @@ contract Settings is Script {
 
         IMessenger.Settings memory settings = IMessenger.Settings(
             LAYERZERO,
-            ARBITRUM,
+            L2,
             L2_EID,
             messengerL2,
             10 gwei, // min fee
@@ -51,7 +57,17 @@ contract Settings is Script {
         );
 
         // Call setSettingsMessages
-        messengerL1.setSettingsMessages(ARBITRUM, settings);
+        messengerL1.setSettingsMessages(L2, settings);
+
+        vm.stopBroadcast();
+    }
+
+    function _token_setPeer() internal {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        IDOFT token = IDOFT(_token_L1);
+        token.setPeer(L2_EID, addressToBytes32(_token_L2));
 
         vm.stopBroadcast();
     }
@@ -67,18 +83,20 @@ contract Settings is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        IDOFT token = IDOFT(_token);
+        IDOFT token = IDOFT(_token_L1);
         address sender = 0x4C0301d076D90468143C2065BBBC78149f1FcAF1;
-        uint256 amount = token.balanceOf(sender);
+        uint256 amount = 1000 gwei;
+        uint256 amount_out = _removeDust(amount);
         uint256 _fee = 500_000 gwei;
+        require(amount_out > 0, "Amount out is zero");
 
         // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
         SendParam memory sendParam = SendParam(
-            30101,
+            L2_EID,
             addressToBytes32(sender),
-            amount, // amount is temporary to calculate quote
             amount,
+            amount_out,
             options,
             "",
             ""
@@ -94,5 +112,12 @@ contract Settings is Script {
 
     function addressToBytes32(address _addr) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(_addr)));
+    }
+
+    function _removeDust(uint256 _amountLD) internal view returns (uint256 amountLD) {
+        IDOFT token = IDOFT(_token_L1);
+        uint256 decimalConversionRate = token.decimalConversionRate();
+        // slither-disable-next-line divide-before-multiply
+        return (_amountLD / decimalConversionRate) * decimalConversionRate;
     }
 }

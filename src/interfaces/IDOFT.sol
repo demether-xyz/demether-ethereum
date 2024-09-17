@@ -21,4 +21,9 @@ interface IDOFT is IERC20, IOFT {
 
     /// @notice Provides a conversion rate when swapping between denominations of SD and LD
     function decimalConversionRate() external view returns (uint256);
+
+    /// @notice Sets the address of the peer contract on the other chain.
+    /// @param _eid The endpoint ID.
+    /// @param _peer he address of the peer to be associated with the corresponding endpoint.
+    function setPeer(uint32 _eid, bytes32 _peer) external;
 }
