@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import "forge-std/Script.sol";
 import { Messenger } from "../src/Messenger.sol";
 import { IMessenger } from "../src/interfaces/IMessenger.sol";
+import { DepositsManagerL1 } from "../src/DepositsManagerL1.sol";
 import { IDOFT } from "../src/interfaces/IDOFT.sol";
 import { Origin } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
@@ -12,21 +13,39 @@ import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm
 contract Settings is Script {
     using OptionsBuilder for bytes;
 
+    address _depositsL1 = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
     address _messengerL1 = 0x80e6Bc0bF865DaCaB84c1C818bD3cE966254309B;
-    address _messengerL2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675;
+    address _messengerL2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675; // not needed if only OFT
     address _token_L1 = 0x863C1355b1057D59747E401A0e3DDd2D99e1AFd5;
     address _token_L2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675;
 
     // https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts
     // morph 40322
 
-    uint32 L2_EID = 40322;
+    uint32 L2 = 44787;
+    uint32 L2_EID = 40125;
 
     function run() public {
-        // _L1_settings_on_L2();
-        // _L2_settings_mainnet();
-        _L2_send();
+        _L1_settings_on_L2();
+        //        _L2_send();
         //_token_setPeer();
+        //_deposit_to_L2();
+    }
+
+    function _deposit_to_L2() internal {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        DepositsManagerL1 depositsManager = DepositsManagerL1(payable(_depositsL1));
+        Messenger messengerL1 = Messenger(payable(_messengerL1));
+
+        uint256 fee = messengerL1.quoteLayerZero(L2) + 100_000 gwei;
+        uint256 amount = 0.001 ether;
+
+        // deposit
+        depositsManager.depositETH{ value: amount + fee }(L2, fee, address(0));
+
+        vm.stopBroadcast();
     }
 
     function _L1_settings_on_L2() internal {
@@ -38,7 +57,6 @@ contract Settings is Script {
 
         // Define the parameters for setSettingsMessages
         uint8 LAYERZERO = 1;
-        uint32 L2 = 2810;
         address messengerL2 = _messengerL2;
         uint128 gas = 200_000;
         bytes memory options = abi.encode(gas);
@@ -49,11 +67,11 @@ contract Settings is Script {
             LAYERZERO,
             L2,
             L2_EID,
-            messengerL2,
+            _token_L2, // ALERT! setting to token for non-minting
             10 gwei, // min fee
             0, // slippage
             options, // gas as uint128
-            true // native ETH
+            false // native ETH
         );
 
         // Call setSettingsMessages
@@ -92,15 +110,7 @@ contract Settings is Script {
 
         // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
-        SendParam memory sendParam = SendParam(
-            L2_EID,
-            addressToBytes32(sender),
-            amount,
-            amount_out,
-            options,
-            "",
-            ""
-        );
+        SendParam memory sendParam = SendParam(L2_EID, addressToBytes32(sender), amount, amount_out, options, "", "");
         MessagingFee memory fee = MessagingFee(_fee, 0);
 
         // send through LayerZero

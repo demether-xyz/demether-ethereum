@@ -11,6 +11,7 @@ const chainIds = {
   arbitrum: 42161,
   sepolia: 11155111,
   morph_holesky: 2810,
+  celo_alfajores: 44787,
 };
 
 function createTestnetConfig(network) {
@@ -26,6 +27,9 @@ function createTestnetConfig(network) {
       break;
     case "morph_holesky":
       url = "https://blissful-late-tent.morph-holesky.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92";
+      break;
+    case "celo_alfajores":
+      url = "https://alfajores-forno.celo-testnet.org";
       break;
   }
 
@@ -59,6 +63,7 @@ module.exports = {
     arbitrum: createTestnetConfig("arbitrum"),
     sepolia: createTestnetConfig("sepolia"),
     morph_holesky: createTestnetConfig("morph_holesky"),
+    celo_alfajores: createTestnetConfig("celo_alfajores"),
   },
   solidity: {
     version: "0.8.26",

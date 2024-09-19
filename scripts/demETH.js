@@ -30,6 +30,11 @@ function getSettings(network) {
         owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
         layerzero: "0x6C7Ab2202C98C4227C5c46f1417D81144DA716Ff",
       };
+    case "celo_alfajores":
+      return {
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        layerzero: "0x6EDCE65403992e310A62460808c4b910D972f10f",
+      };
   }
 }
 
@@ -38,8 +43,7 @@ async function main() {
   const list = [deposit_manager];
   let dependencies = await getDependencies(list, network.name);
   const settings = getSettings(network.name);
-  const deposit_manager_address =
-    deposit_manager in dependencies ? dependencies[deposit_manager] : settings.owner;
+  const deposit_manager_address = deposit_manager in dependencies ? dependencies[deposit_manager] : settings.owner;
 
   await dependenciesDeployer({
     name: "demETH",
