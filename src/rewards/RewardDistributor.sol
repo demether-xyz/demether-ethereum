@@ -34,6 +34,19 @@ contract RewardDistributor is Initializable, OwnableAccessControl, PausableUpgra
     /// @notice Mapping to track claimed amounts for each address
     mapping(address => uint256) public claimed;
 
+    /// @notice Campaign structure to track start and end blocks
+    struct Campaign {
+        uint256 startBlock;
+        uint256 endBlock;
+        bool isActive;
+    }
+
+    /// @notice Mapping of campaigns by their ID
+    mapping(uint256 => Campaign) public campaigns;
+
+    /// @notice Counter to track campaign IDs
+    uint256 public campaignCounter;
+
     /// @notice Emitted when a user claims their reward
     /// @param account The address of the user claiming the reward
     /// @param amount The amount of tokens claimed
@@ -46,6 +59,16 @@ contract RewardDistributor is Initializable, OwnableAccessControl, PausableUpgra
     /// @notice Emitted when tokens are withdrawn from the contract
     /// @param amount The amount of tokens withdrawn
     event TokensWithdrawn(uint256 amount);
+
+    /// @notice Emitted when a campaign is started
+    /// @param campaignId The ID of the started campaign
+    /// @param startBlock The block number when the campaign started
+    event CampaignStarted(uint256 campaignId, uint256 startBlock);
+
+    /// @notice Emitted when a campaign is stopped
+    /// @param campaignId The ID of the stopped campaign
+    /// @param endBlock The block number when the campaign ended
+    event CampaignStopped(uint256 campaignId, uint256 endBlock);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -108,6 +131,40 @@ contract RewardDistributor is Initializable, OwnableAccessControl, PausableUpgra
     /// @notice Resumes all claim operations
     function unpause() external onlyService whenPaused {
         _unpause();
+    }
+
+    /// @notice Starts a new campaign by recording the current block number as the startBlock
+    /// @return campaignId The ID of the started campaign
+    function startCampaign() external onlyService returns (uint256 campaignId) {
+        campaignId = campaignCounter++;
+        require(!campaigns[campaignId].isActive, "Campaign already active");
+
+        campaigns[campaignId] = Campaign({ startBlock: block.number, endBlock: 0, isActive: true });
+
+        emit CampaignStarted(campaignId, block.number);
+    }
+
+    /// @notice Stops an active campaign by storing the current block as the endBlock
+    /// @param campaignId The ID of the campaign to stop
+    function stopCampaign(uint256 campaignId) external onlyService {
+        require(campaigns[campaignId].isActive, "Campaign not active");
+        campaigns[campaignId].endBlock = block.number;
+        campaigns[campaignId].isActive = false;
+
+        emit CampaignStopped(campaignId, block.number);
+    }
+
+    /// @notice Returns all the data for a specific campaign
+    /// @param campaignId The ID of the campaign
+    /// @return startBlock The start block of the campaign
+    /// @return endBlock The end block of the campaign
+    /// @return isActive The active status of the campaign
+    function getCampaignData(uint256 campaignId) external view returns (uint256 startBlock, uint256 endBlock, bool isActive) {
+        Campaign memory campaign = campaigns[campaignId];
+
+        require(campaign.startBlock != 0, "Campaign has not started");
+
+        return (campaign.startBlock, campaign.endBlock, campaign.isActive);
     }
 
     /// @dev Authorizes upgrades of the contract
