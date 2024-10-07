@@ -15,11 +15,13 @@ pragma solidity ^0.8.26;
 
 import { OFTUpgradeable } from "@layerzerolabs/lz-evm-oapp-v2_upgradable/contracts/oft/OFTUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title Demether Open Fungible Token (DOFT)
 /// @dev Extends OFTUpgradeable for cross-chain capabilities and UUPSUpgradeable for upgradability.
 /// @notice Implements an ERC20 token with upgradability and cross-chain functionalities.
-contract DOFT is OFTUpgradeable, UUPSUpgradeable {
+contract DOFT is ERC20Upgradeable, UUPSUpgradeable, OwnableUpgradeable {
     /// @notice Thrown when attempting to upgrade to an implementation that is not a contract.
     /// @param newImplementation The address of the invalid implementation.
     error ImplementationIsNotContract(address newImplementation);
@@ -39,7 +41,7 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     address private _minter;
 
     /// @notice Constructor with LayerZero endpoint.
-    constructor(address _lzEndpoint) OFTUpgradeable(_lzEndpoint) {}
+    constructor(address _lzEndpoint) {}
 
     /// @dev Ensures that only the designated minter can execute.
     modifier onlyMinter() {
@@ -73,7 +75,8 @@ contract DOFT is OFTUpgradeable, UUPSUpgradeable {
     /// @dev Calls parent initializers in the correct order and then calls the contract-specific initializer.
     // solhint-disable-next-line
     function __DOFT_init(string memory _name, string memory _symbol, address _delegate, address _minterAddress) internal onlyInitializing {
-        __OFT_init(_name, _symbol, _delegate);
+//        __OFT_init(_name, _symbol, _delegate);
+        __ERC20_init(_name, _symbol);
         __Ownable_init();
         __UUPSUpgradeable_init();
         __DOFT_init_unchained(_delegate, _minterAddress);

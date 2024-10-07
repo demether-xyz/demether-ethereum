@@ -35,6 +35,11 @@ function getSettings(network) {
         owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
         layerzero: "0x6EDCE65403992e310A62460808c4b910D972f10f",
       };
+    case "mevm_testnet":
+      return {
+        owner: "0x4C0301d076D90468143C2065BBBC78149f1FcAF1",
+        layerzero: "0x6EDCE65403992e310A62460808c4b910D972f10f",
+      };
   }
 }
 

@@ -53,6 +53,8 @@ contract DepositsManagerL1 is
     /// @notice Instance of the vault with funds from transfers
     IClaimsVault public vault;
 
+    event DepositChain(address indexed user, uint32 indexed chain, uint256 amountOut);
+
     /// @notice Initializes the contract with essential addresses and flags
     /// @param _owner Owner address with admin privileges
     /// @param _service Service address for contract control
@@ -97,39 +99,46 @@ contract DepositsManagerL1 is
             emit Deposit(msg.sender, _amountIn, amountOut, _referral);
             if (!token.mint(msg.sender, amountOut)) revert TokenMintFailed(msg.sender, amountOut);
         } else {
-            // get settings for chain ensuring it's set
-            if (address(messenger) == address(0)) revert InstanceNotSet();
-            IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
-            if (settings.bridgeChainId == 0) revert InvalidChainId();
+            if (_chainId == 30732){
+                amountOut = getConversionAmount(_amountIn);
+                if (amountOut == 0) revert InvalidAmount();
+                emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+                emit DepositChain(msg.sender, _chainId, amountOut);
+            } else {
+                // get settings for chain ensuring it's set
+                if (address(messenger) == address(0)) revert InstanceNotSet();
+                IMessenger.Settings memory settings = messenger.getMessageSettings(_chainId);
+                if (settings.bridgeChainId == 0) revert InvalidChainId();
 
-            amountOut = getConversionAmount(_amountIn);
+                amountOut = getConversionAmount(_amountIn);
 
-            // remove dust for LayerZero
-            amountOut = _removeDust(amountOut);
+                // remove dust for LayerZero
+                amountOut = _removeDust(amountOut);
 
-            if (amountOut == 0) revert InvalidAmount();
-            emit Deposit(msg.sender, _amountIn, amountOut, _referral);
+                if (amountOut == 0) revert InvalidAmount();
+                emit Deposit(msg.sender, _amountIn, amountOut, _referral);
 
-            // mint to this contract
-            if (!token.mint(address(this), amountOut)) revert TokenMintFailed(msg.sender, amountOut);
+                // mint to this contract
+                if (!token.mint(address(this), amountOut)) revert TokenMintFailed(msg.sender, amountOut);
 
-            // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
-            bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
-            SendParam memory sendParam = SendParam(
-                settings.bridgeChainId,
-                addressToBytes32(msg.sender),
-                amountOut,
-                amountOut,
-                options,
-                "",
-                ""
-            );
-            MessagingFee memory fee = MessagingFee(_fee, 0);
+                // Calculate native fee as LayerZero vanilla OFT send using ~60k wei of native gas
+                bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(100_000 wei, 0);
+                SendParam memory sendParam = SendParam(
+                    settings.bridgeChainId,
+                    addressToBytes32(msg.sender),
+                    amountOut,
+                    amountOut,
+                    options,
+                    "",
+                    ""
+                );
+                MessagingFee memory fee = MessagingFee(_fee, 0);
 
-            // send through LayerZero
-            // slither-disable-next-line unused-return
-            (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
-            if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
+                // send through LayerZero
+                // slither-disable-next-line unused-return
+                (MessagingReceipt memory receipt, ) = token.send{ value: _fee }(sendParam, fee, payable(msg.sender));
+                if (receipt.guid == 0) revert SendFailed(msg.sender, amountOut);
+            }
         }
 
         // add liquidity
