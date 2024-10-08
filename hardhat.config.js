@@ -12,24 +12,28 @@ const chainIds = {
   sepolia: 11155111,
   morph_holesky: 2810,
   celo_alfajores: 44787,
+  celo: 42220,
 };
 
 function createTestnetConfig(network) {
   switch (network) {
+    case "mainnet":
+      url = "https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW";
+      break;
     case "sepolia":
       url = "https://eth-sepolia.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW";
       break;
     case "arbitrum":
       url = "https://arb-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW";
       break;
-    case "mainnet":
-      url = "https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW";
-      break;
-    case "morph_holesky":
-      url = "https://blissful-late-tent.morph-holesky.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92";
+    case "celo":
+      url = "https://celo-mainnet.infura.io/v3/99b4edc128834c78b4d9a46d6369e3aa";
       break;
     case "celo_alfajores":
       url = "https://alfajores-forno.celo-testnet.org";
+      break;
+    case "morph_holesky":
+      url = "https://blissful-late-tent.morph-holesky.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92";
       break;
   }
 
@@ -64,6 +68,7 @@ module.exports = {
     sepolia: createTestnetConfig("sepolia"),
     morph_holesky: createTestnetConfig("morph_holesky"),
     celo_alfajores: createTestnetConfig("celo_alfajores"),
+    celo: createTestnetConfig("celo"),
   },
   solidity: {
     version: "0.8.26",

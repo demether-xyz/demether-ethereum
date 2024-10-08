@@ -13,23 +13,26 @@ import { SendParam, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm
 contract Settings is Script {
     using OptionsBuilder for bytes;
 
-    address _depositsL1 = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
-    address _messengerL1 = 0x80e6Bc0bF865DaCaB84c1C818bD3cE966254309B;
-    address _messengerL2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675; // not needed if only OFT
-    address _token_L1 = 0x863C1355b1057D59747E401A0e3DDd2D99e1AFd5;
-    address _token_L2 = 0x8BFD12c3348F6754AC11c4Bb365F200E0c781675;
+    address _depositsL1 = 0xEd58cD5Bf2e00ACeaFeC9e56e972E44f34Bb58c3;
+    address _messengerL1 = 0x488F2e0603D0856418e544E67E60858537FC005C;
+    address _messengerL2 = 0x8d0ac6fD687E7CB8C595F62E93020D3C066ccbb7;
+    address _token_L1 = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
+    address _token_L2 = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
 
     // https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts
     // morph 40322
 
-    uint32 L2 = 44787;
-    uint32 L2_EID = 40125;
+    uint32 L2 = 42161;
+    uint32 L2_EID = 30110;
+    uint32 L1_EID = 30101;
 
     function run() public {
-        _L1_settings_on_L2();
-        //        _L2_send();
-        //_token_setPeer();
+        _L1_settings_for_L2();
+        //        _token_setPeer();
+        //        _token_setPeer_L2();
+
         //_deposit_to_L2();
+        //        _L2_send();
     }
 
     function _deposit_to_L2() internal {
@@ -48,7 +51,7 @@ contract Settings is Script {
         vm.stopBroadcast();
     }
 
-    function _L1_settings_on_L2() internal {
+    function _L1_settings_for_L2() internal {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
@@ -67,7 +70,7 @@ contract Settings is Script {
             LAYERZERO,
             L2,
             L2_EID,
-            _token_L2, // ALERT! setting to token for non-minting
+            _messengerL2,
             10 gwei, // min fee
             0, // slippage
             options, // gas as uint128
@@ -86,6 +89,16 @@ contract Settings is Script {
 
         IDOFT token = IDOFT(_token_L1);
         token.setPeer(L2_EID, addressToBytes32(_token_L2));
+
+        vm.stopBroadcast();
+    }
+
+    function _token_setPeer_L2() internal {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        IDOFT token = IDOFT(_token_L2);
+        token.setPeer(L1_EID, addressToBytes32(_token_L1));
 
         vm.stopBroadcast();
     }
