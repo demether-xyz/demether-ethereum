@@ -20,16 +20,18 @@ contract Settings is Script {
     address _token_L2 = 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc;
 
     // https://docs.layerzero.network/v2/developers/evm/technical-reference/deployed-contracts
-    // morph 40322
-
-    uint32 L2 = 42161;
-    uint32 L2_EID = 30110;
+    uint32 L2 = 42220;
+    uint32 L2_EID = 30125;
     uint32 L1_EID = 30101;
 
     function run() public {
-        _L1_settings_for_L2();
-        //        _token_setPeer();
-        //        _token_setPeer_L2();
+        // Step 1: settings for L2 chain on messenger
+        //_L1_settings_for_L2();
+        // Step 2: Set peer for token on L1
+        //_token_setPeer();
+        // Step 3: Set peer for token on L2
+        _token_setPeer_L2();
+        // Step 4: Verify code on L2
 
         //_deposit_to_L2();
         //        _L2_send();

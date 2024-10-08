@@ -88,7 +88,18 @@ module.exports = {
       mainnet: process.env.ETHERSCAN,
       arbitrumOne: process.env.ARBICAN,
       sepolia: process.env.ETHERSCAN,
-    }
+      celo: process.env.CELOSCAN,
+    },
+    customChains: [
+      {
+        network: "celo",
+        chainId: 42220,
+        urls: {
+          apiURL: "https://api.celoscan.io/api",
+          browserURL: "https://celoscan.io/"
+        }
+      }
+    ]
   },
   defender: {
     apiKey: process.env.DEFENDER_TEAM_API_KEY,

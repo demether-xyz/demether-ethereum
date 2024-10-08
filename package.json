@@ -10,8 +10,9 @@
     "lint": "solhint --max-warnings 0 \"src/**/*.sol\"",
     "slither": "slither .",
     "deploy": "DEBUG=deployment npx hardhat run --network celo scripts/demETH.js",
-    "verify": "npx hardhat verify --network mainnet --contract src/TimeLock.sol:TimeLock --constructor-args scripts/arguments.js 0xD3fd7F7A1EB67123C96034aabD254F7e341463D5",
-    "script": "forge script --rpc-url https://eth-mainnet.g.alchemy.com/v2/ESrlxBQxB17StnQQKuXeV8V1o4G5aLuW script/Settings.s.sol --broadcast",
+    "verify": "npx hardhat verify --network celo --contract src/TimeLock.sol:TimeLock --constructor-args scripts/arguments.js 0xD3fd7F7A1EB67123C96034aabD254F7e341463D5",
+    "verify_demETH": "npx hardhat verify --network celo 0xbAE3E03e3f847D0adD4eE6bE4732c690f7Fa9cCc 0x1a44076050125825900e736c501f859c50fE728c",
+    "script": "forge script --rpc-url https://celo-mainnet.infura.io/v3/99b4edc128834c78b4d9a46d6369e3aa script/Settings.s.sol --broadcast",
     "local": "anvil --fork-url https://blissful-late-tent.quiknode.pro/cde3ea40627ca03856d86b56c7174d515a95fe92"
   },
   "dependencies": {
